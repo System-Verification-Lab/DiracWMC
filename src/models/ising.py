@@ -41,11 +41,11 @@ class IsingModel:
         self._external_field = [0.0] * node_count
     
     @classmethod
-    def from_string(self, text: str) -> "IsingModel":
+    def from_string(cls, text: str) -> "IsingModel":
         """ Convert a JSON-formatted string to an Ising Model object """
         data = json.loads(text)
         jsonschema.validate(data, JSON_SCHEMA)
-        model = IsingModel(data["nodes"])
+        model = cls(data["nodes"])
         for i, j, strength in data["interactions"]:
             model.add_interaction(i, j, strength)
         model._external_field = list(map(float, data["external_field"]))

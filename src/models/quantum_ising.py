@@ -46,13 +46,13 @@ class QuantumIsingModel:
         self._interactions: dict[tuple[int, int], float] = {}
 
     @classmethod
-    def from_string(self, text: str) -> "QuantumIsingModel":
+    def from_string(cls, text: str) -> "QuantumIsingModel":
         """ Parse a JSON-formatted string and get the corresponding Quantum
             Ising Model """
         data = json.loads(text)
         jsonschema.validate(data, JSON_SCHEMA)
         external_factor = data.get("external_factor", 0.0)
-        model = QuantumIsingModel(data["nodes"], external_factor)
+        model = cls(data["nodes"], external_factor)
         for i, j, strength in data["interactions"]:
             model.add_interaction(i, j, strength)
         return model

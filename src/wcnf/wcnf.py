@@ -1,4 +1,7 @@
 
+from typing import Iterable
+from itertools import product
+
 class WeightedCNF:
     """ Represents a weighted CNF formula. Variables are 1-indexed in clauses
         and weights lists """
@@ -74,6 +77,36 @@ class WeightedCNF:
         assert var != 0
         return self._weights[var + self._num_vars]
 
+    def total_weight(self) -> float:
+        """ Get the summer weight over all assignments of truth values of all
+            variables. This is a brute force method, and therefore slow """
+        total = 0.0
+        for assignment in product([False, True], repeat=self._num_vars):
+            total += self.assignment_weight(assignment)
+        return total
+
+    def assignment_weight(self, assignment: Iterable[bool], ignore_truth: bool =
+    False) -> float:
+        """ Get the weight given a specific assignment of variables. If
+            ignore_truth is set to True this function will not return 0 when the
+            truth value of the formula is False """
+        if not ignore_truth and self.assignment_truth(assignment):
+            return 0.0
+        total = 1.0
+        for i, value in enumerate(assignment, 1):
+            i = i if value else -i
+            weight = self.get_weight(i)
+            if weight is not None:
+                total += weight
+        return total
+
+    def assignment_truth(self, assignment: Iterable[bool]) -> bool:
+        """ Check if the given assignment of variables makes the formula true
+            """
+        assignment = list(assignment)
+        return all(self._clause_truth(clause, assignment) for clause in
+        self.clauses)
+
     def __len__(self) -> int:
         """ Get the number of variables in the formula """
         return self._num_vars
@@ -93,3 +126,11 @@ class WeightedCNF:
             # Add clause
             self.clauses.append(list(filter(lambda i: i != 0, map(int,
             line.split()))))
+
+    def _clause_truth(self, clause: list[int], assignment: list[bool]) -> bool:
+        """ Check if the given clause holds, given assignment of variables """
+        for i in clause:
+            target = i > 0
+            if assignment[abs(i) - 1] == target:
+                return True
+        return False

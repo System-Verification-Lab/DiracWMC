@@ -1,7 +1,6 @@
 
-from src.models import QuantumIsingModel
+from src.models import IsingModel
 
-model = QuantumIsingModel.from_string(open("test.txt").read())
+model = IsingModel.from_string(open("examples/ising/two_spin.json").read())
 print(model.to_string())
-print(model.hamiltonian())
-print(model.partition_function())
+print(model.partition_function(1))

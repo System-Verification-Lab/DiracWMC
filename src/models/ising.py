@@ -7,6 +7,8 @@ import jsonschema
 
 JSON_SCHEMA = {
     "type": "object",
+    "required": ["nodes", "external_field", "interactions"],
+    "additionalProperties": False,
     "properties": {
         "nodes": {"type": "integer"},
         "external_field": {
@@ -39,13 +41,13 @@ class IsingModel:
         self._external_field = [0.0] * node_count
     
     @classmethod
-    def from_string(self, text: str):
+    def from_string(self, text: str) -> "IsingModel":
         """ Convert a JSON-formatted string to an Ising Model object """
         data = json.loads(text)
         jsonschema.validate(data, JSON_SCHEMA)
         model = IsingModel(data["nodes"])
         for i, j, strength in data["interactions"]:
-            model._interactions[i, j] = strength
+            model.add_interaction(i, j, strength)
         model._external_field = list(map(float, data["external_field"]))
         return model
 
@@ -86,6 +88,8 @@ class IsingModel:
             strength. If add_to_existing is True, no error will be thrown when
             the interactions already exists, and the interaction strength will
             be added to the current strength """
+        if i > j: i, j = j, i
+        assert i != j
         if not add_to_existing and (i, j) in self._interactions:
             raise RuntimeError(f"Interaction between {i} and {j} already "
             "exists")

@@ -14,10 +14,7 @@ JSON_SCHEMA = {
     "additionalProperties": False,
     "properties": {
         "nodes": {"type": "integer"},
-        "external_factor": {
-            "type": "number",
-            "required": False,
-        },
+        "external_factor": {"type": "number"},
         "interactions": {
             "type": "array",
             "items": {

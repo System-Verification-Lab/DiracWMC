@@ -1,2 +1,3 @@
 
 from .ising_to_wcnf import ising_to_wcnf
+from .quantum_ising_to_ising import quantum_ising_to_ising

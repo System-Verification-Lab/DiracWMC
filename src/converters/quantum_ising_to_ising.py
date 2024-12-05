@@ -9,19 +9,23 @@ def coth(x: float) -> float:
     return np.cosh(x) / np.sinh(x)
 
 def quantum_ising_to_ising(quantum_model: QuantumIsingModel, beta: float,
-layers: int) -> IsingModel:
+layers: int) -> tuple[IsingModel, float]:
     """ Converts a d-dimensional Quantum Ising Model to a (d+1)-dimensional
-        Ising Model. The partition functions of the two models are equal at
+        Ising Model. The partition functions of the two models are equivalent at
         inverse temperate beta for the Quantum Ising Model, and inverse
-        temperature 1 for the Ising Model. Increasing the number of layers
-        increases the accuracy of the estimation. Implementation is based on
-        Theorem 4 from https://academic.oup.com/ptp/article/56/5/1454/1860476
+        temperature 1 for the Ising Model. The multiplication factor between the
+        two models is returned as the second item in the tuple. Increasing the
+        number of layers increases the accuracy of the estimation.
+        Implementation is based on Theorem 4 from
+        https://academic.oup.com/ptp/article/56/5/1454/1860476
         """
     assert beta > 0
+    assert quantum_model.external_factor >= 0.0
     if quantum_model.external_factor == 0.0:
         return _trivial_conversion(quantum_model, beta)
     assert layers > 0
     gamma = beta * quantum_model.external_factor
+    # TODO: Find out why this doesn't work
     inter_layer_strength = np.log(coth(gamma / layers)) / 2.0
     node_count = quantum_model.node_count
     model = IsingModel(layers * node_count)
@@ -36,7 +40,10 @@ layers: int) -> IsingModel:
         model.add_interaction(layer * node_count + i, (layer + 1) * node_count +
         i, inter_layer_strength)
     # NOTE: The output model does not have external interactions
-    return model
+    # TODO: Find out why this doesn't work
+    factor = np.pow(np.sinh(2.0 * gamma / layers) / 2.0, node_count * layers /
+    2.0)
+    return model, factor
 
 def _trivial_conversion(quantum_model: QuantumIsingModel, beta: float) -> (
 IsingModel):

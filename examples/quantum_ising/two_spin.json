@@ -1,0 +1,7 @@
+{
+    "nodes": 2,
+    "external_factor": 1,
+    "interactions": [
+        [0, 1, 1]
+    ]
+}

@@ -76,12 +76,7 @@ class IsingModel:
         for spin, strength in zip(config, self._external_field):
             total -= strength * spin
         return total
-    
-    @property
-    def external_field(self) -> list[float]:
-        """ Get the external field of the Ising Model, which can be modified """
-        return self._external_field
-    
+
     def add_interaction(self, i: int, j: int, strength: float, *,
     add_to_existing: bool = False):
         """ Add an interaction between two nodes i and j with the given
@@ -95,6 +90,21 @@ class IsingModel:
             "exists")
         self._interactions.setdefault((i, j), 0.0)
         self._interactions[i, j] += strength
+
+    @property
+    def external_field(self) -> list[float]:
+        """ Get the external field of the Ising Model, which can be modified """
+        return self._external_field
+    
+    @property
+    def node_count(self) -> int:
+        """ Get the number of nodes in the model """
+        return self._node_count
+
+    @property
+    def interactions(self) -> dict[tuple[int, int], float]:
+        """ Get the interactions in the model """
+        return self._interactions
 
     def __str__(self) -> str:
         """ Get the string representation of the model as a JSON-formatted

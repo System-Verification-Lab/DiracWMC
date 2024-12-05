@@ -1,6 +1,9 @@
 
-from src.wcnf import WeightedCNF
+from src.models import IsingModel
+from src.converters import ising_to_wcnf
 
-formula = WeightedCNF.from_string(open("examples/cnf/simple.cnf").read())
-print(formula.to_string())
-print(formula.clauses)
+model = IsingModel.from_string(open("examples/ising/two_spin.json").read())
+print(model.partition_function(1.0))
+wcnf = ising_to_wcnf(model, 1.0)
+print(wcnf.total_weight())
+print(wcnf.to_string())

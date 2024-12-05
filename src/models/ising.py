@@ -103,7 +103,8 @@ class IsingModel:
 
     @property
     def interactions(self) -> dict[tuple[int, int], float]:
-        """ Get the interactions in the model """
+        """ Get the interactions in the model. This should not be modified
+            without copying """
         return self._interactions
 
     def __str__(self) -> str:

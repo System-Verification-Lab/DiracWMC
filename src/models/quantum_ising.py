@@ -106,6 +106,26 @@ class QuantumIsingModel:
         range(self._node_count)))
         return np.matrix(current)
 
+    @property
+    def external_factor(self) -> float:
+        """ Get the external factor gamma of the model """
+        return self._external_factor
+
+    @property
+    def node_count(self) -> int:
+        """ Get the number of nodes in the model """
+        return self._node_count
+    
+    @property
+    def interactions(self) -> dict[tuple[int, int], float]:
+        """ Get the interactions in the model. This should not be modified
+            without copying """
+        return self._interactions
+
     def __str__(self) -> str:
         """ Convert to string using the same format that from_string() uses """
         return self.to_string()
+    
+    def __len__(self) -> int:
+        """ Get the number of nodes in the model """
+        return self._node_count

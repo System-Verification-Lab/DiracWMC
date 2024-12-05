@@ -16,8 +16,10 @@ quantum_model = QuantumIsingModel.from_string(open(input_file).read())
 model, factor = quantum_ising_to_ising(quantum_model, beta, 50)
 wcnf = ising_to_wcnf(model, 1.0)
 open(output_file, "w").write(str(wcnf))
-
+print(f"Written to output file {output_file}")
+# NOTE: This will be slow for many-qubit systems
 print(quantum_model.partition_function(beta))
-print(factor)
+print(f"Multiplication factor: {factor}")
+# For debugging these can be uncommented, but these functions are really slow:
 # print(model.partition_function(1.0) * factor)
 # print(wcnf.total_weight() * factor)

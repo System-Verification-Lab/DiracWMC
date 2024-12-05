@@ -39,7 +39,7 @@ layers: int) -> tuple[IsingModel, float]:
     for layer, i in product(range(layers - 1), range(node_count)):
         model.add_interaction(layer * node_count + i, (layer + 1) * node_count +
         i, inter_layer_strength)
-    # NOTE: The output model does not have external interactions
+    # NOTE: The output model does not have an external field
     # TODO: Find out why this doesn't work
     factor = np.pow(np.sinh(2.0 * gamma / layers) / 2.0, node_count * layers /
     2.0)

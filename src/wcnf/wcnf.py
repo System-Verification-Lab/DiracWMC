@@ -20,16 +20,21 @@ class WeightedCNF:
         formula: WeightedCNF | None = None
         sum_vars: set[int] = set()
         for line in map(str.strip, text.split("\n")):
-            if line.startswith("c") or len(line) == 0:
-                continue
-            if line.startswith(("p cnf", "p show")):
-                _, cmd, *args = line.split()
-                if cmd == "cnf":
-                    assert formula is None
-                    formula = cls(int(args[0]))
-                else:
-                    sum_vars = set(filter(lambda i: i != 0, map(int, args)))
+            if line.startswith("p cnf"):
+                # CNF formula definition
+                _, _, num_vars, _ = line.split()
+                num_vars = int(num_vars)
+                assert formula is None
+                formula = cls(int(num_vars))
+            elif line.startswith("c p show"):
+                # Sum-vars
+                _, _, _, *args = line.split()
+                sum_vars = set(filter(lambda i: i != 0, map(int, args)))
+            elif line.startswith("c") or len(line) == 0:
+                # Empty line or comment
+                pass
             else:
+                # CNF clause or variable weight
                 assert formula is not None
                 formula._parse_cnf_line(line)
         assert formula is not None
@@ -53,13 +58,13 @@ class WeightedCNF:
         sum_vars = [i for i in range(1, self._num_vars + 1) if
         self.get_weight(i) is not None or self.get_weight(-i) is not None]
         vars_string = "".join(map(lambda i: str(i) + " ", sum_vars))
-        text.append(f"p show {vars_string}0")
+        text.append(f"c p show {vars_string}0")
         # Variable weights
         for i in range(-self._num_vars, self._num_vars + 1):
             if i == 0:
                 continue
             if self.get_weight(i) is not None:
-                text.append(f"p weight {i} {self.get_weight(i)}")
+                text.append(f"c p weight {i} {self.get_weight(i)}")
         # Clauses
         for clause in self.clauses:
             vars_string = "".join(map(lambda i: str(i) + " ", clause))
@@ -118,9 +123,9 @@ class WeightedCNF:
     def _parse_cnf_line(self, line: str):
         """ Parse a line in a CNF-formatted string and apply the given
             instruction to this object """
-        if line.startswith("p weight"):
+        if line.startswith("c p weight"):
             # Add weight to variable
-            var, weight = line.split()[2:]
+            var, weight = line.split()[3:]
             self.set_weight(int(var), float(weight))
         else:
             # Add clause

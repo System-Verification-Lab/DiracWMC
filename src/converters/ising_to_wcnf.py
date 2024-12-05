@@ -27,5 +27,5 @@ def ising_to_wcnf(model: IsingModel, beta: float) -> WeightedCNF:
     # Weight of connections is e^(beta*strength*(2*tau[ij]-1))
     for index, (_, strength) in enumerate(interactions, n + 1):
         formula.set_weight(index, np.exp(beta * strength))
-        formula.set_weight(-index, np.exp(beta * strength))
+        formula.set_weight(-index, np.exp(-beta * strength))
     return formula

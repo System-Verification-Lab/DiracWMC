@@ -82,12 +82,15 @@ class WeightedCNF:
         assert var != 0
         return self._weights[var + self._num_vars]
 
-    def total_weight(self) -> float:
-        """ Get the summer weight over all assignments of truth values of all
-            variables. This is a brute force method, and therefore slow """
+    def total_weight(self, ignore_truth: bool = False) -> float:
+        """ Get the summed weight over all assignments of truth values of all
+            variables. This is a brute force method, and therefore slow. If
+            ignore_truth is set to True this function will return the sum of all
+            weights, irrespective of whether the configurations satisfy the
+            formula """
         total = 0.0
         for assignment in product([False, True], repeat=self._num_vars):
-            total += self.assignment_weight(assignment)
+            total += self.assignment_weight(assignment, ignore_truth)
         return total
 
     def assignment_weight(self, assignment: Iterable[bool], ignore_truth: bool =
@@ -95,14 +98,14 @@ class WeightedCNF:
         """ Get the weight given a specific assignment of variables. If
             ignore_truth is set to True this function will not return 0 when the
             truth value of the formula is False """
-        if not ignore_truth and self.assignment_truth(assignment):
+        if not ignore_truth and not self.assignment_truth(assignment):
             return 0.0
         total = 1.0
         for i, value in enumerate(assignment, 1):
             i = i if value else -i
             weight = self.get_weight(i)
             if weight is not None:
-                total += weight
+                total *= weight
         return total
 
     def assignment_truth(self, assignment: Iterable[bool]) -> bool:

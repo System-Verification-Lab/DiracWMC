@@ -99,8 +99,15 @@ class QuantumIsingModel:
                 np.identity(2 ** (self._node_count - j - 1))
             ])
         # External field
-        current += self._external_factor * reduce(np.kron, (X_MATRIX for _ in
-        range(self._node_count)))
+        external_field = np.zeros((2 ** self._node_count, 2 **
+        self._node_count))
+        for i in range(self._node_count):
+            external_field += self._external_factor * reduce(np.kron, [
+                np.identity(2 ** i),
+                X_MATRIX,
+                np.identity(2 ** (self._node_count - i - 1))
+            ])
+        current += external_field
         return np.matrix(current)
 
     @property

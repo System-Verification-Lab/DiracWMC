@@ -67,7 +67,7 @@ parser.add_argument("-d", "--debug", action="count", help="Enables debugging "
 "information based on number of times argument is repeated: Once for exact "
 "calculation of partition function, twice for determining partition function "
 "of classical model, as well as the total weight of the wCNF formula, using "
-"brute force")
+"brute force", default=0)
 args = parser.parse_args()
 
 print()
@@ -120,9 +120,10 @@ if args.debug >= 2:
     f"{classical_partition}")
 print(f"{ConsoleColor.CYAN}Multiplication factor:{ConsoleColor.CLEAR} "
 f"{factor}")
-quantum_partition_est = solver_output * factor
-print(f"{ConsoleColor.CYAN}Quantum model partition function (estimate):"
-f"{ConsoleColor.CLEAR} {quantum_partition_est}")
+if solver_output is not None:
+    quantum_partition_est = solver_output * factor
+    print(f"{ConsoleColor.CYAN}Quantum model partition function (estimate):"
+    f"{ConsoleColor.CLEAR} {quantum_partition_est}")
 if args.debug >= 1:
     quantum_partition = quantum_model.partition_function(args.beta)
     print(f"{ConsoleColor.CYAN}Quantum model partition function (exact):"

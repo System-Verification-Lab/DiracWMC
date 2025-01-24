@@ -1,12 +1,13 @@
 
 from src.models import QuantumIsingModel
 from src.converters import ising_to_wcnf, quantum_ising_to_ising
-import sys
 from pathlib import Path
 from subprocess import Popen, PIPE
 import os
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
+
+SOLVERS = ("DPMC", "cachet")
 
 class ConsoleColor:
     BOLD = "\033[1m"
@@ -35,6 +36,20 @@ def run_dpmc(filename: str) -> float:
     raise Exception("Could not find result of DPMC. Something must have gone "
     "wrong while running it")
 
+def run_cachet(filename: str) -> float:
+    """ Run the Cachet solver on the given .cnf file. Assumes that the Cachet
+        solver is properly installed. Returns the total weight """
+    cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "solvers",
+    "cachet")
+    filepath = os.path.join(os.getcwd(), filename)
+    p = Popen(["./cachet", filepath], cwd=cwd, stdout=PIPE)
+    result = p.stdout.read().decode("utf-8")
+    for line in result.split("\n"):
+        if line.startswith("Satisfying probability"):
+            return float(line.split()[-1])
+    raise Exception("Could not find result of Cachet. Something must have gone "
+    "wrong while running it")
+
 def int_in_range(arg: str, mn: int | None = None, mx: int | None = None) -> int:
     """ Checks if the given argument is a string containing an integer that has
         the given minimum and/or maximum. None means there is no restriction """
@@ -51,9 +66,12 @@ parser.add_argument("filename", type=str, help="The source filename of the "
 parser.add_argument("-o", "--output", type=str, default="output.cnf", help=
 "Output filename of the generated .cnf file. Must have a .cnf extension. "
 "Defaults to output.cnf")
-parser.add_argument("-s", "--solver", type=str, choices=["DPMC"], help="Solver "
-"to use to determine weight of generated wCNF formula. If omitted, no solver "
-"is used and weight is not determined.")
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-s", "--solver", type=str, help="Solver to use to "
+"determine weight of generated wCNF formula. If omitted, no solver is used and "
+"weight is not determined.", choices=SOLVERS)
+group.add_argument("-f", "--format", type=str, help="Format to use for the "
+"output. This accepts the same values as --solver.", choices=SOLVERS)
 parser.add_argument("-i", "--ising", action="store_true", help="Generate a "
 "file with the Classical Ising Model approximation of the Quantum Ising Model. "
 "The file will be in the same location and have the same name as the output, "
@@ -69,6 +87,12 @@ parser.add_argument("-d", "--debug", action="count", help="Enables debugging "
 "of classical model, as well as the total weight of the wCNF formula, using "
 "brute force", default=0)
 args = parser.parse_args()
+
+output_format = "DPMC"
+if args.solver is not None:
+    output_format = args.solver
+if args.format is not None:
+    output_format = args.format
 
 print()
 print(f"{ConsoleColor.CYAN}Input filename:{ConsoleColor.CLEAR} {args.filename}")
@@ -96,18 +120,27 @@ if args.ising:
 print(f"{ConsoleColor.GREY}Converting to wCNF formula...{ConsoleColor.CLEAR}")
 wcnf = ising_to_wcnf(model, 1.0)
 
+normalize_factor: float | None = None
+if args.solver == "cachet":
+    print(f"{ConsoleColor.GREY}Normalizing wCNF weights...{ConsoleColor.CLEAR}")
+    normalize_factor = wcnf.normalize_weights()
+
 print(f"{ConsoleColor.GREY}Writing to output file {args.output}..."
 f"{ConsoleColor.CLEAR}")
 with open(args.output, "w") as output_file:
-    output_file.write(str(wcnf))
+    output_file.write(wcnf.to_string(cnf_format=output_format))
 
 solver_output: float | None = None
 match args.solver:
     case "DPMC": solver_output = run_dpmc(args.output)
+    case "cachet": solver_output = run_cachet(args.output)
     case None: pass
     case _: raise Exception(f"Solver {args.solver} unimplemented")
 
 print()
+if normalize_factor is not None:
+    print(f"{ConsoleColor.CYAN}wCNF normalization factor:{ConsoleColor.CLEAR} "
+    f"{normalize_factor}")
 if solver_output is not None:
     print(f"{ConsoleColor.CYAN}Solver output:{ConsoleColor.CLEAR} "
     f"{solver_output}")
@@ -122,6 +155,8 @@ print(f"{ConsoleColor.CYAN}Multiplication factor:{ConsoleColor.CLEAR} "
 f"{factor}")
 if solver_output is not None:
     quantum_partition_est = solver_output * factor
+    if normalize_factor is not None:
+        quantum_partition_est *= normalize_factor
     print(f"{ConsoleColor.CYAN}Quantum model partition function (estimate):"
     f"{ConsoleColor.CLEAR} {quantum_partition_est}")
 if args.debug >= 1:

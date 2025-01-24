@@ -62,7 +62,7 @@ class WeightedCNF:
                 self.set_weight(-i, 0.5)
             else:
                 self.set_weight(i, pos / total)
-                self.set_weight(i, neg / total)
+                self.set_weight(-i, neg / total)
         return factor
 
     def total_weight(self, ignore_truth: bool = False) -> float:
@@ -221,11 +221,8 @@ class WeightedCNF:
         # CNF description
         text.append(f"p cnf {self._num_vars} {len(self.clauses)}")
         # Variable weights
-        for i in range(-self._num_vars, self._num_vars + 1):
-            if i == 0:
-                continue
-            if self.get_weight(i) is not None:
-                text.append(f"w {i} {self.get_weight(i)}")
+        for i in range(1, self._num_vars + 1):
+            text.append(f"w {i} {self.get_weight(i)}")
         # Clauses
         for clause in self.clauses:
             vars_string = "".join(map(lambda i: str(i) + " ", clause))

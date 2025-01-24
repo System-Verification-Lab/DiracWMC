@@ -17,17 +17,7 @@ The Quantum Ising Model should be represented using a JSON file with a root obje
 
 ## Installing a solver
 
-The following dependencies need to be installed first:
-
-- make
-- cmake 3.16
-- automake 1.16
-- g++ 11.2
-- gmp 6.2
-- boost (graph and system)
-    - `sudo apt-get install libboost-all-dev`
-
-Solvers can then be installed by using `make solvers/solver_name` with the correct solver name.
+Different solvers have different installation requirements. The folder `docs/solvers` contains instructions on how to install the different solvers. Please note that solvers should be installed in a folder `solvers/[solver-name]` to work properly with this application.
 
 ## Running the conversion tool
 

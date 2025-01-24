@@ -15,6 +15,8 @@ These instructions use the LG tree decomposers with FlowCutter, and the DMC exec
 
 ## Installation and setup
 
+*The DPMC solver can be installed automatically by using `make solvers/DPMC`. If this does not work, try the description below.*
+
 The solver can be downloaded into the current directory as follows:
 ```bash
 git clone --recursive https://github.com/vardigroup/DPMC

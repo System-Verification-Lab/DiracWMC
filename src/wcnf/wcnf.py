@@ -43,6 +43,28 @@ class WeightedCNF:
         assert var != 0
         return self._weights[var + self._num_vars]
 
+    def normalize_weights(self) -> float:
+        """ Normalize the weights of this CNF formula to have weight(-x) +
+            weight(x) = 1. This raises an exception if not all weights are set
+            or one of the weights is negative (both positive and negative
+            variables need to be set). Returns the normalization factor that the
+            resulting total weight would have to be multiplied with """
+        factor = 1.0
+        for i in range(1, self._num_vars + 1):
+            pos, neg = self.get_weight(i), self.get_weight(-i)
+            assert pos is not None and neg is not None
+            assert pos >= 0.0 and neg >= 0.0
+            total = pos + neg
+            assert total > 0.0
+            factor *= total
+            if total == 0.0:
+                self.set_weight(i, 0.5)
+                self.set_weight(-i, 0.5)
+            else:
+                self.set_weight(i, pos / total)
+                self.set_weight(i, neg / total)
+        return factor
+
     def total_weight(self, ignore_truth: bool = False) -> float:
         """ Get the summed weight over all assignments of truth values of all
             variables. This is a brute force method, and therefore slow. If

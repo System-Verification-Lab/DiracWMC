@@ -6,6 +6,8 @@ from subprocess import Popen, PIPE
 import os
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
+from time import time
+from typing import Callable
 
 SOLVERS = ("DPMC", "cachet")
 
@@ -16,6 +18,14 @@ class ConsoleColor:
     CYAN = "\033[96m"
     GREY = "\033[90m"
     CLEAR = "\033[0m"
+
+def measure_time(func: Callable[[str], float], arg: str) -> tuple[float, float]:
+    """ Measure the time one of the "run" functions below takes to execute.
+        Returns a tuple of the time taken and the function output """
+    start = time()
+    result = func(arg)
+    end = time()
+    return end - start, result
 
 def run_dpmc(filename: str) -> float:
     """ Run the DPMC solver on the given .cnf file. Assumes that the DPMC solver
@@ -131,11 +141,16 @@ with open(args.output, "w") as output_file:
     output_file.write(wcnf.to_string(cnf_format=output_format))
 
 solver_output: float | None = None
+runtime: float | None = None
 match args.solver:
-    case "DPMC": solver_output = run_dpmc(args.output)
-    case "cachet": solver_output = run_cachet(args.output)
-    case None: pass
-    case _: raise Exception(f"Solver {args.solver} unimplemented")
+    case "DPMC":
+        runtime, solver_output = measure_time(run_dpmc, args.output)
+    case "cachet":
+        runtime, solver_output = measure_time(run_cachet, args.output)
+    case None:
+        pass
+    case _:
+        raise Exception(f"Solver {args.solver} unimplemented")
 
 print()
 if normalize_factor is not None:
@@ -144,6 +159,7 @@ if normalize_factor is not None:
 if solver_output is not None:
     print(f"{ConsoleColor.CYAN}Solver output:{ConsoleColor.CLEAR} "
     f"{solver_output}")
+    print(f"{ConsoleColor.CYAN}Runtime:{ConsoleColor.CLEAR} {runtime:.3f} s")
 if args.debug >= 2:
     classical_partition = model.partition_function(1.0)
     print(f"{ConsoleColor.CYAN}Classical model partition function:"

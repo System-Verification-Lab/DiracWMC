@@ -187,9 +187,47 @@ class WeightedCNF:
     @classmethod
     def _read_cachet_string(cls, text: str) -> "WeightedCNF":
         """ Read in a Cachet formatted CNF string and return weighted CNF """
-        ...
+        formula: WeightedCNF | None = None
+        for line in map(str.strip, text.split("\n")):
+            if line.startswith("p cnf"):
+                # CNF formula definition
+                _, _, num_vars, _ = line.split()
+                num_vars = int(num_vars)
+                assert formula is None
+                formula = cls(int(num_vars))
+            elif line.startswith("c") or len(line) == 0:
+                # Empty line or comment
+                pass
+            else:
+                # CNF clause or variable weight
+                assert formula is not None
+                if line.startswith("w"):
+                    # Add weight to variable
+                    var, weight = line.split()[1:]
+                    formula.set_weight(int(var), float(weight))
+                else:
+                    # Add clause
+                    formula.clauses.append(list(filter(lambda i: i != 0,
+                    map(int, line.split()))))
+                formula._parse_cnf_line(line)
+        assert formula is not None
+        return formula
 
     def _to_cachet_string(self) -> str:
         """ Convert this weighted CNF formula to a Cachet formatted weighted CNF
-            string """
-        ...
+            string. The weights in this wCNF need to be normalized for Cachet to
+            process the string properly! """
+        text: list[str] = []
+        # CNF description
+        text.append(f"p cnf {self._num_vars} {len(self.clauses)}")
+        # Variable weights
+        for i in range(-self._num_vars, self._num_vars + 1):
+            if i == 0:
+                continue
+            if self.get_weight(i) is not None:
+                text.append(f"w {i} {self.get_weight(i)}")
+        # Clauses
+        for clause in self.clauses:
+            vars_string = "".join(map(lambda i: str(i) + " ", clause))
+            text.append(f"{vars_string}0")
+        return "\n".join(text)

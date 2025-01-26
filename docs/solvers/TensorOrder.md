@@ -1,14 +1,14 @@
 
-Updated Dockerfile:
+# 1. Updated Dockerfile
 ```Dockerfile
-FROM python:3.7-slim
+FROM python:3.8-slim
 
 # New METIS version that is still available
 ADD https://github.com/KarypisLab/METIS/archive/refs/tags/v5.2.1.tar.gz /solvers/metis-5.2.1.tar.gz
 ENV METIS_DLL=/solvers/metis-5.2.1/build/Linux-x86_64/libmetis/libmetis.so
 
 # Added GKLib installation (dependency of new METIS)
-ADD https://github.com/KarypisLab/GKlib/archive/refs/tags/METIS-v5.1.1-DistDGL-0.5.tar.gz /GKLib/GKLib.tar.gz
+ADD https://github.com/KarypisLab/GKlib/archive/refs/heads/master.zip /GKLib/GKLib.zip
 
 RUN apt-get clean \
 && cd /var/lib/apt \
@@ -25,10 +25,11 @@ RUN apt-get clean \
 && apt-get -y install cmake \
 # Added GKLib installation (dependency of new METIS)
 && cd /GKLib/ \
-&& tar -xvf GKLib.tar.gz \
-&& rm GKLib.tar.gz \
-&& cd /GKLib/GKlib-METIS-v5.1.1-DistDGL-0.5 \
-&& make config openmp=set \
+&& apt-get install unzip \
+&& unzip GKLib.zip \
+&& rm GKLib.zip \
+&& cd /GKLib/GKlib-master \
+&& make config \
 && make \
 && make install \
 # -------------------------
@@ -36,7 +37,7 @@ RUN apt-get clean \
 && tar -xvf metis-5.2.1.tar.gz \
 && rm metis-5.2.1.tar.gz \
 && cd /solvers/METIS-5.2.1 \
-&& make config shared=1 gklib_path=~/local \
+&& make config shared=1 \
 && make \
 && make install \
 && pip install click numpy python-igraph networkx==2.1.0 metis turbine cython threadpoolctl jax jaxlib
@@ -65,5 +66,10 @@ RUN cd /solvers/portfolio \
 COPY src /src
 RUN cd /src \
 && make
-
 ```
+
+# 2. Fix compiler & deprecation errors
+
+- In file `solvers/flow-cutter-pace17/src/list_graph.h` after line 6 add `#include <string>`
+- In file `src/tensor_network/tensor_apis/numpy_apis.py` line 21, replace `self._numpy.object` with `object`
+- In file `src/tensororder.py` line 214, replace `is not` with `!=`

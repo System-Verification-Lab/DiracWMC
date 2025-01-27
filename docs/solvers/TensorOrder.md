@@ -1,5 +1,16 @@
 
-# 1. Updated Dockerfile
+# Installing and using the TensorOrder solver
+
+Below are instruction for installing and using the TensorOrder solver. The installation requires Linux. Docker needs to be installed.
+
+## Installation and setup
+
+Download the TensorOrder source from the [GitHub](https://github.com/vardigroup/TensorOrder). Several files need to be changed since some deprecated functions are used in the code. The following changes were tested on WSL2 Ubuntu subsystem on Windows 11.
+
+### 1. Dockerfile
+
+Change the Dockerfile to have the following content:
+
 ```Dockerfile
 FROM python:3.8-slim
 
@@ -68,8 +79,21 @@ RUN cd /src \
 && make
 ```
 
-# 2. Fix compiler & deprecation errors
+### 2. Fix compiler & deprecation errors
+
+The following files need to be changed:
 
 - In file `solvers/flow-cutter-pace17/src/list_graph.h` after line 6 add `#include <string>`
 - In file `src/tensor_network/tensor_apis/numpy_apis.py` line 21, replace `self._numpy.object` with `object`
 - In file `src/tensororder.py` line 214, replace `is not` with `!=`
+
+### 3. Building
+
+The docker container can be built using
+```sh
+docker build --tag tensororder .
+```
+
+## Usage
+
+See the included [README.md](../../solvers/TensorOrder/README.md) for usage.

@@ -94,11 +94,28 @@ class TensorOrderSolverInterface(SolverInterface):
     def calculate_from_file(self, filename: str) -> float:
         """ Convert the given wCNF formula to the format that the solver can use
             """
-        # TODO: Implement
-        ...
+        cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..",
+        "..", "solvers", "TensorOrder")
+        filepath = os.path.join(os.getcwd(), filename)
+        infile = open(filepath, "r")
+        p = Popen(["docker", "run", "-i", "tensororder:latest", "python",
+        "/src/tensororder.py", "--planner=line-Flow",
+        "--weights=cachet"], cwd=cwd, stdout=PIPE, stdin=infile)
+        result = p.stdout.read().decode("utf-8")
+        time_taken = count = None
+        for line in result.split("\n"):
+            if line.startswith("Total Time:"):
+                time_taken = float(line.split()[-1])
+            if line.startswith("Count:"):
+                count = float(line.split()[-1])
+        if count is None:
+            raise Exception("Could not find result of TensorOrder. Something "
+            "must have gone wrong while running it")
+        if time_taken is not None:
+            log_stat("TensorOrder measured time", f"{time_taken:.3f} s")
+        return count
     
     def format_formula(self, formula: WeightedCNF) -> str:
         """ Convert the given wCNF formula to the format that the solver can use
             """
-        # TODO: Implement
-        ...
+        return format_wcnf(formula, "cachet")

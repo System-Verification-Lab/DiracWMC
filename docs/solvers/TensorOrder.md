@@ -97,3 +97,8 @@ docker build --tag tensororder .
 ## Usage
 
 See the included [README.md](../../solvers/TensorOrder/README.md) for usage.
+
+If an error is given that the docker daemon isn't running, try the following command and run again:
+```sh
+sudo service docker start
+```

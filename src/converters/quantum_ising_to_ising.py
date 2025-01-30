@@ -17,7 +17,8 @@ layers: int) -> tuple[IsingModel, float]:
         two models is returned as the second item in the tuple. Increasing the
         number of layers increases the accuracy of the estimation.
         Implementation is based on Theorem 4 from
-        https://academic.oup.com/ptp/article/56/5/1454/1860476
+        https://academic.oup.com/ptp/article/56/5/1454/1860476. Nodes are
+        indexed `layer * QUANTUM_NODE_COUNT + quantum_node_index`
         """
     assert beta > 0
     assert quantum_model.external_factor >= 0.0

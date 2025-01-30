@@ -66,23 +66,27 @@ class Arguments:
         self.filename: str = self._args.filename
         self.output_filename: str = self._args.output
         self.solver_type: SolverType | None = self._args.solver
-        # Solver is initialized
+        # Solver is initialized. Output format is determined based on solver or
+        # specified output format (if present)
         self.solver = None
+        self.output_format = "dpmc"
         match self.solver_type:
             case "cachet":
                 self.solver: SolverInterface = CachetSolverInterface(
                 self.output_filename)
+                self.output_format = "cachet"
             case "dpmc":
                 self.solver: SolverInterface = DPMCSolverInterface(
                 self.output_filename)
+                self.output_format = "dpmc"
             case "tensororder":
                 self.solver: SolverInterface = TensorOrderSolverInterface(
                 self.output_filename)
+                self.output_format = "cachet"
         self.solver: SolverInterface | None
         # Output format should only be used if no solver is set
-        self.output_format = self._args.format
-        if self.output_format is None:
-            self.output_format = "dpmc"
+        if self._args.format is not None:
+            self.output_format = self._args.format
         self.output_format: WCNFFormat
         self.create_ising: bool = self._args.ising
         self.beta: float = self._args.beta

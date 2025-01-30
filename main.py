@@ -26,10 +26,12 @@ log_info("Converting to wCNF formula...")
 wcnf = ising_to_wcnf(model, 1.0)
 log_info("Adding missing weights...")
 wcnf.add_missing_weights()
-# NOTE: It is not needed to normalize for every solver, but we do it anyway
-log_info("Normalizing wCNF weights...")
-normalize_factor = wcnf.normalize_weights()
-log_stat("wCNF normalization factor", normalize_factor)
+# Normalize weights for Cachet formatted inputs
+normalize_factor = 1.0
+if args.output_format == "cachet":
+    log_info("Normalizing wCNF weights...")
+    normalize_factor = wcnf.normalize_weights()
+    log_stat("wCNF normalization factor", normalize_factor)
 
 if args.solver is None:
     log_info(f"Writing to output file {args.output_filename}...")

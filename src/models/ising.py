@@ -1,5 +1,5 @@
 
-from typing import Iterable
+from typing import Iterable, Literal
 import numpy as np
 from itertools import product
 import json
@@ -90,6 +90,28 @@ class IsingModel:
             "exists")
         self._interactions.setdefault((i, j), 0.0)
         self._interactions[i, j] += strength
+
+    def fix_node(self, node: int, value: int) -> "IsingModel":
+        """ Fix the value of a specific node i to -1 or 1 and return the new
+            Ising model with one node less """
+        assert 0 <= node < self._node_count
+        assert value in (-1, 1)
+        model = IsingModel(self._node_count - 1)
+        def new_index(x: int) -> int:
+            return x if x < node else x - 1
+        # Copy external field
+        for i in range(self._node_count):
+            if i == node:
+                continue
+            model.external_field[new_index(i)] = self.external_field[i]
+        # Copy interactions and add fixed interactions to external field
+        for (i, j), strength in self._interactions.items():
+            if i == node or j == node:
+                other = new_index(i if j == node else j)
+                model.external_field[other] += strength * value
+                continue
+            model.add_interaction(new_index(i), new_index(j), strength)
+        return model
 
     @property
     def external_field(self) -> list[float]:

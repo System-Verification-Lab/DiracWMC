@@ -1,12 +1,9 @@
 
-from typing import Literal, get_args
 from argparse import ArgumentParser, ArgumentTypeError
 from .wcnf import (WCNFFormat, WCNF_FORMATS, SolverInterface,
-CachetSolverInterface, TensorOrderSolverInterface, DPMCSolverInterface)
+CachetSolverInterface, TensorOrderSolverInterface, DPMCSolverInterface,
+SolverType, SOLVERS)
 from .logger import log_stat
-
-SolverType = Literal["cachet", "dpmc", "tensororder"]
-SOLVERS: tuple[str, ...] = get_args(SolverType)
 
 class Arguments:
     """ Processes command line arguments and stores any yielded info """

@@ -5,6 +5,10 @@ from ..logger import log_info, log_stat
 import os
 from subprocess import Popen, PIPE
 from time import time
+from typing import Literal, get_args
+
+SolverType = Literal["cachet", "dpmc", "tensororder"]
+SOLVERS: tuple[str, ...] = get_args(SolverType)
 
 class SolverInterface:
     """ Generic solver interface """
@@ -13,6 +17,22 @@ class SolverInterface:
         """ Constructor. An output file path can be given to output produced
             .cnf file to """
         self._output_path = output_path
+        # Runtime of last weight calculation run
+        self._runtime: float | None = None
+
+    @classmethod
+    def from_solver_name(self, solver_type: SolverType, *args, **kwargs) -> (
+    "SolverInterface"):
+        """ Get a specific solver interface given by the solver name. Other
+            arguments for the solver constructor can be passed as well """
+        match solver_type:
+            case "cachet":
+                return CachetSolverInterface(*args, **kwargs)
+            case "dpmc":
+                return DPMCSolverInterface(*args, **kwargs)
+            case "tensororder":
+                return TensorOrderSolverInterface(*args, **kwargs)
+        raise RuntimeError(f"Unknown solver type {solver_type}")
 
     def calculate_from_file(self, filename: str) -> float:
         """ Calculate total weight of wCNF formula in the given .cnf file """
@@ -33,13 +53,21 @@ class SolverInterface:
         result = self.calculate_from_file(self._output_path)
         end = time()
         log_stat("Solver output", str(result))
-        log_stat("Runtime", f"{end - start:.3f} s")
+        self._runtime = end - start
+        log_stat("Runtime", f"{self._runtime:.3f} s")
         return result
 
     def make_output_file(self, formula: WeightedCNF):
         """ Create output .cnf file with correctly formatted content """
         with open(self._output_path, "w") as f:
             f.write(self.format_formula(formula))
+    
+    @property
+    def runtime(self) -> float:
+        """ Get the runtime of the last weight calculation """
+        if self._runtime is None:
+            raise RuntimeError("Runtime not available")
+        return self._runtime
 
 class DPMCSolverInterface(SolverInterface):
     """ Solver interface for the DPMC solver """

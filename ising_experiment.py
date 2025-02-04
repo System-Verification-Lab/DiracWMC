@@ -43,13 +43,19 @@ def do_square_lattice_experiment(solver: SolverType, l: int) -> float:
 
 # Two-dimensional lattice with linear size l at beta=1, with standard normal
 # distributed edge weights
-dpmc_results: list[tuple[int, float]] = []
-for l in range(2, 16):
-    dpmc_results.append((l, do_square_lattice_experiment("dpmc", l)))
-cachet_results: list[tuple[int, float]] = []
-for l in range(2, 10):
-    cachet_results.append((l, do_square_lattice_experiment("cachet", l)))
-print("DPMC results:")
-print(" ".join(f"({l}, {r})" for l, r in dpmc_results))
-print("Cachet results:")
-print(" ".join(f"({l}, {r})" for l, r in cachet_results))
+# dpmc_results: list[tuple[int, float]] = []
+# for l in range(2, 16):
+#     dpmc_results.append((l, do_square_lattice_experiment("dpmc", l)))
+# cachet_results: list[tuple[int, float]] = []
+# for l in range(2, 10):
+#     cachet_results.append((l, do_square_lattice_experiment("cachet", l)))
+tensororder_results: list[tuple[int, float]] = []
+for l in range(2, 21):
+    tensororder_results.append((l, do_square_lattice_experiment("tensororder", l)))
+
+# print("DPMC results:")
+# print(" ".join(f"({l}, {r})" for l, r in dpmc_results))
+# print("Cachet results:")
+# print(" ".join(f"({l}, {r})" for l, r in cachet_results))
+print("TensorOrder results:")
+print(" ".join(f"({l}, {r})" for l, r in tensororder_results))

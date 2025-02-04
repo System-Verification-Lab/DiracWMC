@@ -1,7 +1,7 @@
 
 from .wcnf import WeightedCNF
 from .formats import format_wcnf
-from ..logger import log_info, log_stat
+from ..logger import log_info, log_stat, log_warning
 import os
 from subprocess import Popen, PIPE
 from time import time
@@ -9,6 +9,7 @@ from typing import Literal, get_args
 
 SolverType = Literal["cachet", "dpmc", "tensororder"]
 SOLVERS: tuple[str, ...] = get_args(SolverType)
+SOLVER_TIMEOUT = 1000
 
 class SolverInterface:
     """ Generic solver interface """
@@ -49,12 +50,16 @@ class SolverInterface:
         log_info("Creating output file...")
         self.make_output_file(formula)
         log_info("Running solver...")
+        self._runtime = None
         start = time()
         result = self.calculate_from_file(self._output_path)
         end = time()
         log_stat("Solver output", str(result))
-        self._runtime = end - start
-        log_stat("Runtime", f"{self._runtime:.3f} s")
+        # Only measure runtime if this is not done in the calculate_from_file
+        # function
+        if self._runtime is None:
+            self._runtime = end - start
+        log_stat("Total runtime", f"{end - start:.3f} s")
         return result
 
     def make_output_file(self, formula: WeightedCNF):
@@ -82,7 +87,8 @@ class DPMCSolverInterface(SolverInterface):
         "flow_cutter_pace17 -p 100"], cwd=cwd, stdout=PIPE, stdin=infile)
         p2 = Popen(["./dmc/dmc", f"--cf={filepath}"], cwd=cwd, stdout=PIPE,
         stdin=p1.stdout)
-        result = p2.stdout.read().decode("utf-8")
+        output, _ = p2.communicate(timeout=SOLVER_TIMEOUT)
+        result = output.decode("utf-8")
         for line in result.split("\n"):
             if line.startswith("c s exact double prec-sci"):
                 return float(line.split()[-1])
@@ -104,7 +110,8 @@ class CachetSolverInterface(SolverInterface):
         "..", "solvers", "cachet")
         filepath = os.path.join(os.getcwd(), filename)
         p = Popen(["./cachet", filepath], cwd=cwd, stdout=PIPE)
-        result = p.stdout.read().decode("utf-8")
+        output, _ = p.communicate(timeout=SOLVER_TIMEOUT)
+        result = output.decode("utf-8")
         for line in result.split("\n"):
             if line.startswith("Satisfying probability"):
                 return float(line.split()[-1])
@@ -127,9 +134,10 @@ class TensorOrderSolverInterface(SolverInterface):
         filepath = os.path.join(os.getcwd(), filename)
         infile = open(filepath, "r")
         p = Popen(["docker", "run", "-i", "tensororder:latest", "python",
-        "/src/tensororder.py", "--planner=line-Flow",
+        "/src/tensororder.py", "--planner=factor-Flow",
         "--weights=cachet"], cwd=cwd, stdout=PIPE, stdin=infile)
-        result = p.stdout.read().decode("utf-8")
+        output, _ = p.communicate(timeout=SOLVER_TIMEOUT)
+        result = output.decode("utf-8")
         time_taken = count = None
         for line in result.split("\n"):
             if line.startswith("Total Time:"):
@@ -141,6 +149,9 @@ class TensorOrderSolverInterface(SolverInterface):
             "must have gone wrong while running it")
         if time_taken is not None:
             log_stat("TensorOrder measured time", f"{time_taken:.3f} s")
+            self._runtime = time_taken
+        else:
+            log_warning("TensorOrder measured time not found")
         return count
     
     def format_formula(self, formula: WeightedCNF) -> str:

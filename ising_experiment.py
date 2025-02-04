@@ -41,21 +41,26 @@ def do_square_lattice_experiment(solver: SolverType, l: int) -> float:
     return do_experiment(f"Square lattice; Solver {solver}; Linear size {l}",
     model, solver)
 
-# Two-dimensional lattice with linear size l at beta=1, with standard normal
-# distributed edge weights
-# dpmc_results: list[tuple[int, float]] = []
-# for l in range(2, 16):
-#     dpmc_results.append((l, do_square_lattice_experiment("dpmc", l)))
-# cachet_results: list[tuple[int, float]] = []
-# for l in range(2, 10):
-#     cachet_results.append((l, do_square_lattice_experiment("cachet", l)))
-tensororder_results: list[tuple[int, float]] = []
-for l in range(2, 21):
-    tensororder_results.append((l, do_square_lattice_experiment("tensororder", l)))
+def all_square_lattice_experiments(solver: SolverType) -> list[tuple[int,
+float]]:
+    """ Perform all square lattice experiments for a specific solver. Halts
+        whenever a solver times out. Square lattice has linear size l starting
+        from 2,3,... with beta=1 """
+    results: list[tuple[int, float]] = []
+    l = 2
+    timed_out = False
+    while not timed_out:
+        try:
+            results.append((l, do_square_lattice_experiment(solver, l)))
+        except:
+            timed_out = True
+        l += 1
+    return results
 
-# print("DPMC results:")
-# print(" ".join(f"({l}, {r})" for l, r in dpmc_results))
-# print("Cachet results:")
-# print(" ".join(f"({l}, {r})" for l, r in cachet_results))
-print("TensorOrder results:")
-print(" ".join(f"({l}, {r})" for l, r in tensororder_results))
+results: dict[SolverType, list[tuple[int, float]]] = {}
+for solver in SOLVERS:
+    results[solver] = all_square_lattice_experiments(solver)
+
+for solver, res in results.items():
+    print(f"{solver} results:")
+    print(" ".join(f"({l}, {r})" for l, r in res))

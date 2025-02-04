@@ -8,8 +8,8 @@ from time import time
 from typing import Literal, get_args
 
 SolverType = Literal["cachet", "dpmc", "tensororder"]
-SOLVERS: tuple[str, ...] = get_args(SolverType)
-SOLVER_TIMEOUT = 1000
+SOLVERS: tuple[SolverType, ...] = get_args(SolverType)
+SOLVER_TIMEOUT = 15
 
 class SolverInterface:
     """ Generic solver interface """

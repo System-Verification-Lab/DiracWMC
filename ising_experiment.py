@@ -111,8 +111,8 @@ float]]:
     return results
 
 results: dict[str, list[tuple[int, float]]] = {}
-# for solver in SOLVERS:
-#     results[f"Square lattice {solver}"] = all_square_lattice_experiments(solver)
+for solver in SOLVERS:
+    results[f"Square lattice {solver}"] = all_square_lattice_experiments(solver)
 for solver in SOLVERS:
     results[f"Random graph {solver}"] = all_random_graph_experiments(solver)
 

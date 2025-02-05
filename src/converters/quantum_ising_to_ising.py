@@ -23,7 +23,7 @@ layers: int) -> tuple[IsingModel, float]:
     assert beta > 0
     assert quantum_model.external_factor >= 0.0
     if quantum_model.external_factor == 0.0:
-        return _trivial_conversion(quantum_model, beta)
+        return _trivial_conversion(quantum_model, beta), 1.0
     assert layers > 0
     gamma = beta * quantum_model.external_factor
     # TODO: Find out why this doesn't work

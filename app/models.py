@@ -185,14 +185,16 @@ class QuantumIsingModel:
     """ Quantum Ising model interaction and external field strengths in two
         directions (uniform over all spins) """
     
-    def __init__(self, spin_count: int):
+    def __init__(self, spin_count: int, *, interaction: dict[tuple[int, int],
+    float] | None = None, external_field_x: float = 0.0, external_field_z:
+    float = 0.0):
         """ Constructor """
         self._spin_count = spin_count
         # Interaction strengths
-        self._interaction: dict[tuple[int, int], float] = {}
+        self._interaction = {} if interaction is None else interaction.copy()
         # External field strength in both directions
-        self.external_field_x = 0.0
-        self.external_field_z = 0.0
+        self.external_field_x = external_field_x
+        self.external_field_z = external_field_z
 
     def __len__(self) -> int:
         """ Returns the number of spins """
@@ -210,6 +212,12 @@ class QuantumIsingModel:
     def __str__(self) -> str:
         """ Convert this Ising model to JSON """
         return self.to_string()
+
+    def __repr__(self) -> str:
+        """ Canonical representation """
+        return (f"{self.__class__.__name__}({self._spin_count!r}, interaction="
+        f"{self._interaction!r}, external_field_x={self.external_field_x!r}, "
+        f"external_field_z={self.external_field_z!r})")
 
     @classmethod
     def from_string(cls, text: str) -> "IsingModel":

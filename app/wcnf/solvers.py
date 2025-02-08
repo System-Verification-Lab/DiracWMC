@@ -143,10 +143,21 @@ class TensorOrderSolver(Solver):
         """ Run the solver on the given weighted CNF formula and return an
             object with several statistics, including total weight and runtime
             """
+        formula = formula.copy()
+        formula.weights.add_missing()
+        factor = formula.weights.normalize()
+        if factor in (float("inf"), float("-inf"), 0.0):
+            log_warning(f"Cachet failed because normalization factor is "
+            f"{factor}")
+            return SolverResult(False)
+        log_stat("wCNF normalization factor", factor)
         log_info("Creating output file...")
         self._create_file(formula)
         log_info("Running solver...")
-        return self._calculate_from_file()
+        result = self._calculate_from_file()
+        if result.success:
+            result.total_weight *= factor
+        return result
     
     def _create_file(self, formula: WeightedCNFFormula):
         """ Create the output file to pass to the solver """

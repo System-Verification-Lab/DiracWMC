@@ -2,7 +2,7 @@
 from ..models import IsingModel
 from ..wcnf.solvers import SolverType, Solver
 from ..converters import ising_to_wcnf
-from ..logger import ConsoleColor, log_warning
+from ..logger import ConsoleColor, log_warning, log_stat, log_info
 
 def do_ising_experiment(name: str, model: IsingModel, solver_type: SolverType,
 *, beta: float = 1.0, verify_result: None | float = None) -> float:
@@ -17,12 +17,14 @@ def do_ising_experiment(name: str, model: IsingModel, solver_type: SolverType,
     runtime = result.runtime
     if verify_result is not None:
         weight = result.total_weight
+        log_info("Calculating true model weight...")
         true_weight = model.partition_function()
-        error = weight / true_weight - 1
+        error = abs(weight / true_weight - 1)
         if error > verify_result:
             log_warning(f"Result of Ising model is incorrect for solver "
             f"{solver_type} (error {error})")
             return -1.0
+        log_stat("Error of experiment", error)
     print()
     print(f"{ConsoleColor.GREEN}Runtime of experiment \"{name}\": {runtime} "
     f"s{ConsoleColor.CLEAR}")

@@ -1,3 +1,5 @@
+""" Reproduce square lattice experiments from https://arxiv.org/pdf/2212.12812
+    """
 
 from ..generators.ising import generate_square_lattice
 from ._utils import do_ising_experiment

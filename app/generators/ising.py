@@ -27,32 +27,24 @@ def generate_square_lattice(size: int, weights: Literal["normal", "signed"] =
         model[i] = random.normalvariate(0, 1)
     return model
 
-def generate_random_graph(size: int, avg_degree: float = 3.0, weights: Literal[
-"normal", "signed"] = "normal"):
-    """ Generate a random graph Ising model with a certain average degree. The
-        weights can be initialized using a normal distribution or a distribution
-        picking from -1 and +1 with equal probability """
+def generate_random_graph(size: int, degree: int = 3, weights: Literal["normal",
+"signed"] = "normal"):
+    """ Generate a random regular graph with vertices with the given degree. The
+        interaction weights are generated according to the distribution given
+        (by default normal(0, 1), but a sample from +-1 is also possible).
+        External field strengths are set independently per vertex to a value
+        sampled from normal(0, 1). Throws an error if size*degree is not even
+        """
     model = IsingModel(size)
     weight_func = {
-        "normal": (lambda: random.normalvariate(0, 1)),
-        "signed": (lambda: random.choice((-1, 1))),
+        "normal": lambda: random.normalvariate(0, 1),
+        "signed": lambda: random.choice((-1, 1)),
     }[weights]
-    edge_count = round(size * avg_degree / 2.0)
-    found: set[tuple[int, int]] = set()
-    # Interaction strengths
-    for _ in range(edge_count):
-        valid = False
-        edge = (0, 0)
-        while not valid:
-            edge = (random.randrange(size), random.randrange(size))
-            if edge[0] > edge[1]:
-                edge = (edge[1], edge[0])
-            if edge[0] == edge[1] or edge in found:
-                continue
-            found.add(edge)
-            valid = True
-        strength = weight_func()
-        model[edge] = strength
+    assert size * degree % 2 == 0
+    nodes = sum(([i] * degree for i in range(size)), [])
+    random.shuffle(nodes)
+    for i, j in zip(nodes[::2], nodes[1::2]):
+        model[i, j] = weight_func()
     # External field strengths
     for i in range(size):
         model[i] = random.normalvariate(0, 1)

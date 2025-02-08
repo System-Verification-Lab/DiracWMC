@@ -147,7 +147,7 @@ class TensorOrderSolver(Solver):
         formula.weights.add_missing()
         factor = formula.weights.normalize()
         if factor in (float("inf"), float("-inf"), 0.0):
-            log_warning(f"Cachet failed because normalization factor is "
+            log_warning(f"TensorOrder failed because normalization factor is "
             f"{factor}")
             return SolverResult(False)
         log_stat("wCNF normalization factor", factor)

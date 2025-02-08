@@ -180,6 +180,12 @@ class IsingModel:
     def external_field(self) -> list[float]:
         """ Access external field strengths """
         return self._external_field
+
+    def interactions(self) -> Iterable[tuple[int, int, float]]:
+        """ Get an iterator over all interactions in the model as tuples (i, j,
+            strength) """
+        for (i, j), strength in self._interaction.items():
+            yield (i, j, strength)
     
 class QuantumIsingModel:
     """ Quantum Ising model interaction and external field strengths in two

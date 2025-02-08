@@ -54,6 +54,11 @@ class CNFFormula:
         """ Get the truth value of the formula given some variables values """
         return self.assignment_truth(assignment)
 
+    def copy(self) -> "CNFFormula":
+        """ Create a copy of the CNF formula """
+        # NOTE: Clauses are copied in constructor
+        return CNFFormula(self._num_vars, clauses=self.clauses)
+
     def assignment_truth(self, assignment: Iterable[bool]) -> bool:
         """ Get the truth value of the formula given some variable values """
         assignment = list(assignment)
@@ -98,19 +103,16 @@ class VariableWeights:
 
     def __repr__(self) -> str:
         """ Canonical representation """
-        weights: dict[int, float] = {}
-        for i in range(1, self._num_vars + 1):
-            pos, neg = self.get_weight(i), self.get_weight(-i)
-            if pos is not None:
-                weights[i] = pos
-            if neg is not None:
-                weights[-i] = neg
         return (f"{self.__class__.__name__}({self._num_vars!r}, weights="
-        f"{weights!r})")
+        f"{self._weights_dict()!r})")
 
     def __call__(self, assignment: Iterable[bool]) -> float:
         """ Get the weight given some assignment of variable values """
         return self.get_assignment_weight(assignment)
+
+    def copy(self) -> "VariableWeights":
+        """ Create a copy of the variable weights """
+        return VariableWeights(self._num_vars, weights=self._weights_dict())
 
     def get_weight(self, var: int) -> float | None:
         """ Get the weight of a variable (negative variables indicate negations)
@@ -174,6 +176,18 @@ class VariableWeights:
             variable (which can be negative) """
         assert var != 0 and abs(var) <= self._num_vars
         return self._weights[var - (1 if var > 0 else 0) + self._num_vars]
+    
+    def _weights_dict(self) -> dict[int, float]:
+        """ Get a dictionary mapping all variables (both positive and negative)
+            to their weights. Only variables that have a weight are present """
+        weights: dict[int, float] = {}
+        for i in range(1, self._num_vars + 1):
+            pos, neg = self.get_weight(i), self.get_weight(-i)
+            if pos is not None:
+                weights[i] = pos
+            if neg is not None:
+                weights[-i] = neg
+        return weights
 
 class WeightedCNFFormula:
     """ CNF formula with weights assigned to positive and negative versions of
@@ -235,6 +249,11 @@ class WeightedCNFFormula:
                 return self._to_json()
             case _:
                 raise RuntimeError(f"Unknown output format {output_format}")
+
+    def copy(self) -> "WeightedCNFFormula":
+        """ Create a (deep) copy of the weighted CNF formula """
+        return WeightedCNFFormula(self._num_vars, formula=self.formula.copy(),
+        weights=self.weights.copy())
 
     def total_weight(self):
         """ Get the total weight over all assignments of truth values that

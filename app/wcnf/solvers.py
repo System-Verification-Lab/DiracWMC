@@ -172,8 +172,9 @@ class TensorOrderSolver(Solver):
         filepath = os.path.join(os.getcwd(), self.output_path)
         infile = open(filepath, "r")
         p = Popen(["docker", "run", "-i", "tensororder:latest", "python",
-        "/src/tensororder.py", "--planner=factor-Flow",
-        "--weights=cachet"], cwd=cwd, stdout=PIPE, stdin=infile)
+        "/src/tensororder.py", "--planner=factor-Flow", f"--timeout="
+        f"{self.timeout}", "--weights=cachet"], cwd=cwd, stdout=PIPE,
+        stdin=infile)
         try:
             output, _ = p.communicate(timeout=self.timeout)
         except TimeoutExpired:

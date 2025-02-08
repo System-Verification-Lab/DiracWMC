@@ -90,7 +90,7 @@ class VariableWeights:
     def __getitem__(self, var: int) -> float | None:
         """ Get the weight of a variable (negative variables indicate negations)
             """
-        self.get_weight(var)
+        return self.get_weight(var)
 
     def __setitem__(self, var: int, value: float | None) -> float | None:
         """ Set the weight of a variable (negative variables indicate negations)
@@ -171,11 +171,11 @@ class VariableWeights:
             self.set_weight(-i, neg / cur_factor)
         return factor
 
-    def _variable_index(self, var: int):
+    def _variable_index(self, var: int) -> int:
         """ Get the index in the weights list corresponding with the given
             variable (which can be negative) """
         assert var != 0 and abs(var) <= self._num_vars
-        return self._weights[var - (1 if var > 0 else 0) + self._num_vars]
+        return var - (1 if var > 0 else 0) + self._num_vars
     
     def _weights_dict(self) -> dict[int, float]:
         """ Get a dictionary mapping all variables (both positive and negative)
@@ -242,8 +242,10 @@ class WeightedCNFFormula:
             f"are missing weights")
         match output_format:
             case "cachet":
+                assert not self.weights.has_missing()
                 return self._to_cachet()
             case "dpmc":
+                assert not self.weights.has_missing()
                 return self._to_dpmc()
             case "json":
                 return self._to_json()
@@ -296,7 +298,7 @@ class WeightedCNFFormula:
         text.append(f"p cnf {self._num_vars} {len(self.formula.clauses)}")
         # Sum-vars
         vars_string = "".join(map(lambda i: str(i) + " ", range(1,
-        self._num_vars) + 1))
+        self._num_vars + 1)))
         text.append(f"c p show {vars_string}0")
         # Variable weights
         for i in filter(lambda x: x != 0, range(-self._num_vars, self._num_vars

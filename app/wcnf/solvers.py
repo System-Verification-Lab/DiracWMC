@@ -1,8 +1,8 @@
 
 from .formula import WeightedCNFFormula
-from ..logger import log_info, log_warning
+from ..logger import log_info, log_warning, log_stat
 import os
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, TimeoutExpired
 from time import time
 from typing import Literal, get_args
 from dataclasses import dataclass
@@ -30,7 +30,7 @@ class Solver:
         self.timeout = timeout
 
     @classmethod
-    def from_solver_name(self, solver_type: SolverType, *args, **kwargs) -> (
+    def from_solver_name(cls, solver_type: SolverType, *args, **kwargs) -> (
     "Solver"):
         """ Get a specific solver interface given by the solver name. Other
             arguments for the solver constructor can be passed as well """
@@ -74,12 +74,17 @@ class DPMCSolver(Solver):
         p2 = Popen(["./dmc/dmc", f"--cf={filepath}"], cwd=cwd, stdout=PIPE,
         stdin=p1.stdout)
         start = time()
-        output, _ = p2.communicate(timeout=self.timeout)
+        try:
+            output, _ = p2.communicate(timeout=self.timeout)
+        except TimeoutExpired:
+            return SolverResult(False)
         end = time()
         result = output.decode("utf-8")
         for line in result.split("\n"):
             if line.startswith("c s exact double prec-sci"):
-                return SolverResult(True, end - start, float(line.split()[-1]))
+                weight = float(line.split()[-1])
+                log_stat("Solver output", weight)
+                return SolverResult(True, end - start, weight)
         return SolverResult(False)
 
 class CachetSolver(Solver):
@@ -89,10 +94,21 @@ class CachetSolver(Solver):
         """ Run the solver on the given weighted CNF formula and return an
             object with several statistics, including total weight and runtime
             """
+        formula = formula.copy()
+        formula.weights.add_missing()
+        factor = formula.weights.normalize()
+        if factor in (float("inf"), float("-inf"), 0.0):
+            log_warning(f"Cachet failed because normalization factor is "
+            f"{factor}")
+            return SolverResult(False)
+        log_stat("wCNF normalization factor", factor)
         log_info("Creating output file...")
         self._create_file(formula)
         log_info("Running solver...")
-        return self._calculate_from_file()
+        result = self._calculate_from_file()
+        if result.success:
+            result.total_weight *= factor
+        return result
     
     def _create_file(self, formula: WeightedCNFFormula):
         """ Create the output file to pass to the solver """
@@ -106,13 +122,18 @@ class CachetSolver(Solver):
         "..", "solvers", "cachet")
         filepath = os.path.join(os.getcwd(), self.output_path)
         p = Popen(["./cachet", filepath], cwd=cwd, stdout=PIPE)
-        start = time()
-        output, _ = p.communicate(timeout=self.timeout)
-        end = time()
+        try:
+            start = time()
+            output, _ = p.communicate(timeout=self.timeout)
+            end = time()
+        except TimeoutExpired:
+            return SolverResult(False)
         result = output.decode("utf-8")
         for line in result.split("\n"):
             if line.startswith("Satisfying probability"):
-                return SolverResult(True, end - start, float(line.split()[-1]))
+                weight = float(line.split()[-1])
+                log_stat("Solver output", weight)
+                return SolverResult(True, end - start, weight)
         return SolverResult(False)
 
 class TensorOrderSolver(Solver):
@@ -142,7 +163,10 @@ class TensorOrderSolver(Solver):
         p = Popen(["docker", "run", "-i", "tensororder:latest", "python",
         "/src/tensororder.py", "--planner=factor-Flow",
         "--weights=cachet"], cwd=cwd, stdout=PIPE, stdin=infile)
-        output, _ = p.communicate(timeout=self.timeout)
+        try:
+            output, _ = p.communicate(timeout=self.timeout)
+        except TimeoutExpired:
+            return SolverResult(False)
         result = output.decode("utf-8")
         time_taken = count = None
         for line in result.split("\n"):
@@ -150,6 +174,7 @@ class TensorOrderSolver(Solver):
                 time_taken = float(line.split()[-1])
             if line.startswith("Count:"):
                 count = float(line.split()[-1])
+                log_stat("Solver output", count)
         if count is None:
             return SolverResult(False)
         if time_taken is None:

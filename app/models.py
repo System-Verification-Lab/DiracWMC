@@ -279,6 +279,12 @@ class QuantumIsingModel:
         self._external_field_hamiltonian("x") +
         self._external_field_hamiltonian("z"))
     
+    def interactions(self) -> Iterable[tuple[int, int, float]]:
+        """ Get an iterator over all interactions in the model as tuples (i, j,
+            strength) """
+        for (i, j), strength in self._interaction.items():
+            yield (i, j, strength)
+
     def _interaction_hamiltonian(self) -> np.matrix:
         """ Get the interaction part of the Hamiltonian of this model """
         current = np.zeros((2 ** self._spin_count, 2 ** self._spin_count))

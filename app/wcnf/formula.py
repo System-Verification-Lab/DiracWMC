@@ -171,6 +171,13 @@ class VariableWeights:
             self.set_weight(-i, neg / cur_factor)
         return factor
 
+    def uniform_multiply(self, factor: float):
+        """ Multiply all weights (if they are set) with the given factor """
+        for i in range(1, self._num_vars + 1):
+            for v in (i, -i):
+                if self.get_weight(v) is not None:
+                    self.set_weight(v, self.get_weight(v) * factor)
+
     def _variable_index(self, var: int) -> int:
         """ Get the index in the weights list corresponding with the given
             variable (which can be negative) """

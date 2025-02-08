@@ -146,6 +146,29 @@ class VariableWeights:
             negative) """
         return any(weight is None for weight in self._weights)
 
+    def add_missing(self):
+        """ Adds any missing weights by assigning every weight their derived
+            weight using the get_derived_weight method """
+        for i in range(1, self._num_vars + 1):
+            self.set_weight(i, self.get_derived_weight(i))
+            self.set_weight(-i, self.get_derived_weight(-i))
+
+    def normalize(self) -> float:
+        """ Normalize the weights such that weight(x) + weight(-x) = 1. Any
+            missing weights are added first using the add_missing method.
+            Returns the product of all factors that the weights should be
+            multiplied with to get the original weights back """
+        self.add_missing()
+        factor = 1.0
+        for i in range(1, self._num_vars + 1):
+            pos, neg = self.get_derived_weight(i), self.get_derived_weight(-i)
+            assert pos != 0.0 or neg != 0.0
+            cur_factor = pos + neg
+            factor *= cur_factor
+            self.set_weight(i, pos / cur_factor)
+            self.set_weight(-i, neg / cur_factor)
+        return factor
+
     def _variable_index(self, var: int):
         """ Get the index in the weights list corresponding with the given
             variable (which can be negative) """

@@ -3,6 +3,8 @@ from typing import Iterable, Literal, get_args
 from itertools import product
 import json
 import jsonschema
+from sympy import Symbol
+from sympy.logic.boolalg import to_cnf, BooleanFunction, And, Or, Not
 
 WCNFFormat = Literal["cachet", "dpmc", "json"]
 WCNF_FORMATS: tuple[WCNFFormat, ...] = get_args(WCNFFormat)
@@ -54,6 +56,14 @@ class CNFFormula:
         """ Get the truth value of the formula given some variables values """
         return self.assignment_truth(assignment)
 
+    @classmethod
+    def from_sympy(cls, formula: BooleanFunction) -> "CNFFormula":
+        """ Convert a boolean function in sympy to a CNF formula """
+        formula = to_cnf(formula)
+        indices: dict[str, int] = {}
+        clauses: list[list[int]] = cls._process_sympy_and(formula, indices)
+        return CNFFormula(len(indices), clauses=clauses)
+
     def copy(self) -> "CNFFormula":
         """ Create a copy of the CNF formula """
         # NOTE: Clauses are copied in constructor
@@ -65,6 +75,35 @@ class CNFFormula:
         assert len(assignment) == self._num_vars
         return all(self._clause_truth(clause, assignment) for clause in
         self.clauses)
+
+    @classmethod
+    def _process_sympy_and(cls, formula: And | Or | Not | Symbol, indices: dict[
+    str, int]) -> list[list[int]]:
+        """ Process a sympy "and" CNF formula, which may consist of only one
+            clauses. Returns the list of clauses """
+        if not isinstance(formula, And):
+            return [cls._process_sympy_or(formula, indices)]
+        return [cls._process_sympy_or(clause, indices) for clause in
+        formula.args]
+
+    @classmethod
+    def _process_sympy_or(cls, formula: Or | Not | Symbol, indices: dict[str,
+    int]) -> list[int]:
+        """ Process a symbol "or" clause inside a CNF formula, which may consist
+            of a single term. Returns the clause as a list of integers """
+        if not isinstance(formula, Or):
+            return [cls._process_sympy_term(formula, indices)]
+        return [cls._process_sympy_term(term, indices) for term in formula.args]
+
+    @classmethod
+    def _process_sympy_term(cls, formula: Not | Symbol, indices: dict[str, int]
+    ) -> int:
+        """ Process a symbol or negated symbol inside a CNF formula. Returns
+            the index of the symbol, which is negated if the symbol is negated
+            """
+        if isinstance(formula, Not):
+            return -cls._process_sympy_term(formula.args[0], indices)
+        return indices.setdefault(formula.name, len(indices) + 1)
 
     def _clause_truth(self, clause: list[int], assignment: list[bool]) -> bool:
         """ Check if the given clause holds, given assignment of variables """

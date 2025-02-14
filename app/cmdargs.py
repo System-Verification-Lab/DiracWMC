@@ -1,8 +1,7 @@
 
 from argparse import ArgumentParser, ArgumentTypeError
-from .wcnf import (WCNFFormat, WCNF_FORMATS, SolverInterface,
-CachetSolverInterface, TensorOrderSolverInterface, DPMCSolverInterface,
-SolverType, SOLVERS)
+from .wcnf.formula import WCNFFormat, WCNF_FORMATS
+from .wcnf.solvers import Solver, SolverType, SOLVERS
 from .logger import log_stat
 
 class Arguments:
@@ -31,10 +30,10 @@ class Arguments:
         group.add_argument("-f", "--format", type=str, help="Format to use for "
         "the output. This accepts the same values as --solver.",
         choices=WCNF_FORMATS)
-        parser.add_argument("-i", "--ising", action="store_true",
-        help="Generate a file with the Classical Ising Model approximation of "
-        "the Quantum Ising Model. The file will be in the same location and "
-        "have the same name as the output, but has a .json extension")
+        # parser.add_argument("-i", "--ising", action="store_true",
+        # help="Generate a file with the Classical Ising Model approximation of "
+        # "the Quantum Ising Model. The file will be in the same location and "
+        # "have the same name as the output, but has a .json extension")
         parser.add_argument("-b", "--beta", type=float, default=1.0,
         help="Inverse temperature of the Quantum Ising Model. Defaults to 1.")
         parser.add_argument("-l", "--layers", type=lambda x:
@@ -66,26 +65,19 @@ class Arguments:
         # Solver is initialized. Output format is determined based on solver or
         # specified output format (if present)
         self.solver = None
+        if self.solver_type is not None:
+            self.solver = Solver.from_solver_name(self.solver_type,
+            output_path=self.output_filename)
         self.output_format = "dpmc"
         match self.solver_type:
-            case "cachet":
-                self.solver: SolverInterface = CachetSolverInterface(
-                self.output_filename)
-                self.output_format = "cachet"
-            case "dpmc":
-                self.solver: SolverInterface = DPMCSolverInterface(
-                self.output_filename)
-                self.output_format = "dpmc"
-            case "tensororder":
-                self.solver: SolverInterface = TensorOrderSolverInterface(
-                self.output_filename)
-                self.output_format = "cachet"
-        self.solver: SolverInterface | None
+            case "cachet": self.output_format = "cachet"
+            case "dpmc": self.output_format = "dpmc"
+            case "tensororder": self.output_format = "cachet"
+        self.solver: Solver | None
         # Output format should only be used if no solver is set
         if self._args.format is not None:
             self.output_format = self._args.format
         self.output_format: WCNFFormat
-        self.create_ising: bool = self._args.ising
         self.beta: float = self._args.beta
         self.layers: int = self._args.layers
         self.debug_level: int = self._args.debug

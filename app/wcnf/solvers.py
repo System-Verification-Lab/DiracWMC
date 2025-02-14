@@ -18,6 +18,18 @@ class SolverResult:
     runtime: float = -1.0
     total_weight: float = 0.0
 
+    def __str__(self) -> str:
+        """ String representation for a formatted string showing results """
+        items = {
+            "Success": str(self.success),
+            "Runtime": f"{self.runtime:.2f} s",
+            "Total weight": f"{self.total_weight:.10f}",
+        }
+        output = []
+        for key, value in items.items():
+            output.append((key + ":").ljust(15) + " " + value)
+        return "\n".join(output)
+
 class Solver:
     """ Generic solver interface """
 

@@ -57,12 +57,15 @@ class CNFFormula:
         return self.assignment_truth(assignment)
 
     @classmethod
-    def from_sympy(cls, formula: BooleanFunction) -> "CNFFormula":
-        """ Convert a boolean function in sympy to a CNF formula """
+    def from_sympy(cls, formula: BooleanFunction) -> (
+    "tuple[CNFFormula, dict[str, int]]"):
+        """ Convert a boolean function in sympy to a CNF formula. Returns the
+            created formula, as well as a map from variable names to indices in
+            the formula """
         formula = to_cnf(formula)
         indices: dict[str, int] = {}
         clauses: list[list[int]] = cls._process_sympy_and(formula, indices)
-        return CNFFormula(len(indices), clauses=clauses)
+        return CNFFormula(len(indices), clauses=clauses), indices
 
     def copy(self) -> "CNFFormula":
         """ Create a copy of the CNF formula """

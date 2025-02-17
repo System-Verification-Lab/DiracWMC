@@ -280,6 +280,22 @@ class WeightedCNFFormula:
             wcnf.weights[-i] = value
         return wcnf
 
+    @classmethod
+    def from_sympy(cls, formula: BooleanFunction, weights: dict[str,
+    tuple[float | None, float | None]]) -> "WeightedCNFFormula":
+        """ Create a weighted CNF formula given a sympy boolean formula and a
+            dict mapping names of variables to their negative and positive
+            weights """
+        cnf, name_map = CNFFormula.from_sympy(formula)
+        wcnf = WeightedCNFFormula(len(cnf), formula=cnf)
+        for name, (neg, pos) in weights.items():
+            if name not in name_map:
+                raise ValueError(f"Weight name {name} not present in formula")
+            index = name_map[name]
+            wcnf.weights[-index] = neg
+            wcnf.weights[index] = pos
+        return wcnf
+
     def to_string(self, output_format: WCNFFormat = "json") -> str:
         """ Convert to a formatted string. Note that only JSON formatted strings
             can be converted back to WeightedCNFFormula objects. When formatting

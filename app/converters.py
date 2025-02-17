@@ -142,7 +142,9 @@ int) -> tuple[BooleanFunction, dict[str, tuple[float, float]], list[Symbol]]:
         controls.append(control)
         weights[control.name] = (1.0, beta * strength)
         mult_a = Symbol(f"r{index},{len(mults)}")
+        mults.append(mult_a)
         mult_b = Symbol(f"r{index},{len(mults)}")
+        mults.append(mult_b)
         formula &= Equivalent(mult_a, control & Symbol(f"q{index},{i}"))
         formula &= Equivalent(mult_b, control & Symbol(f"q{index},{j}"))
     # Z-directed external field
@@ -151,6 +153,7 @@ int) -> tuple[BooleanFunction, dict[str, tuple[float, float]], list[Symbol]]:
         controls.append(control)
         weights[control.name] = (1.0, quantum_model.external_field_z * beta)
         mult = Symbol(f"f{index},{len(mults)}")
+        mults.append(mult)
         formula &= Equivalent(mult, control & Symbol(f"q{index},{i}"))
     # X-directed external field
     for i in range(len(quantum_model)):
@@ -161,6 +164,9 @@ int) -> tuple[BooleanFunction, dict[str, tuple[float, float]], list[Symbol]]:
         Symbol(f"q{index},{i}"))
     for mult in mults:
         weights[mult.name] = (1.0, -1.0)
+    for i in range(len(quantum_model)):
+        weights[f"q{index},{i}"] = (1.0, 1.0)
+        weights[f"q{index+1},{i}"] = (1.0, 1.0)
     return formula, weights, controls
 
 def _one_of(*symbols: Symbol) -> BooleanFunction:

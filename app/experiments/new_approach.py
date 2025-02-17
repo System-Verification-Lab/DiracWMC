@@ -77,7 +77,7 @@ def get_power_trace(power: int, *, print_result: bool = False) -> SolverResult:
     for i in range(power):
         boolfunc &= Equivalent(Symbol(f"r1,{i}"), Symbol(f"b3,{i}") &
         Symbol(f"q1,{i}"))
-        boolfunc &= Equivalent(Symbol(f"r2,{i}"), Symbol(f"b2,{i}") &
+        boolfunc &= Equivalent(Symbol(f"r2,{i}"), Symbol(f"b3,{i}") &
         Symbol(f"q2,{i}"))
         boolfunc &= Equivalent(Symbol(f"q1,{i+1}"), Symbol(f"q1,{i}") ^
         Symbol(f"b2,{i}"))

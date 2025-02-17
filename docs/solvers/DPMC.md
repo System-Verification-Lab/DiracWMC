@@ -39,6 +39,10 @@ make dmc
 ```
 After this all required dependencies are built. Navigate back to the DPMC folder to run the program on different `.cnf` files.
 
+### Increasing precision of output
+
+In the file `addmc/src/common.hh`, line 157 can be uncommented to remove the limit on precision of output.
+
 ## Usage
 
 There are several examples of input files in the `examples` folder. We will use the `.cnf` files. The following commands convert the `.cnf` file to a tree decomposition using the LG planner, and then run the executor to get the weighted model count of the weighted CNF formula in the `.cnf` file:

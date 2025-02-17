@@ -2,6 +2,7 @@
 from ..wcnf.solvers import DPMCSolver
 from ..models import QuantumIsingModel
 from ..converters import matrix_quantum_ising_to_wcnf
+from time import time
 
 SOLVER_TIMEOUT = 1.0
 ERROR_THRESHOLD = 1e-13
@@ -18,20 +19,24 @@ def run():
     print("True partition function:", true_weight)
     terms = 2
     timed_out = False
-    results = []
+    results: dict[str, list[tuple[float, float]]] = {}
     while not timed_out:
+        start = time()
         result = run_for_terms(model, terms, true_weight)
+        end = time()
         if result is None:
             timed_out = True
         else:
-            results.append(result)
+            results.setdefault("total", []).append((result[0], end - start))
+            results.setdefault("solver", []).append(result)
         terms += 1
         if terms > TERMS_LIMIT:
             break
-    print()
-    print("Results:")
-    print(" ".join(f"({e},{r})" for e, r in results))
-    print()
+    for name, result_list in results.items():
+        print()
+        print(f"Results {name}:")
+        print(" ".join(f"({e},{r})" for e, r in result_list))
+        print()
 
 def run_for_terms(model: QuantumIsingModel, terms: int, true_weight: float) -> (
 tuple[float, float] | None):

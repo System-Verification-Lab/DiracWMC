@@ -116,7 +116,7 @@ terms: int) -> WeightedCNFFormula:
         quantum_model, beta, i)
         formula &= layer_formula
         weights = {**weights, **layer_weights}
-        weights[f"i{i}"] = (1.0, 1.0 / math.factorial(i + 1))
+        weights[f"i{i}"] = (1.0, 1.0 / (i + 1))
         if i > 0:
             formula &= Implies(Symbol(f"i{i}"), Symbol(f"i{i-1}"))
         formula &= Implies(Symbol(f"i{i}"), _one_of(*controls))
@@ -148,20 +148,22 @@ int) -> tuple[BooleanFunction, dict[str, tuple[float, float]], list[Symbol]]:
         formula &= Equivalent(mult_a, control & Symbol(f"q{index},{i}"))
         formula &= Equivalent(mult_b, control & Symbol(f"q{index},{j}"))
     # Z-directed external field
-    for i in range(len(quantum_model)):
-        control = Symbol(f"c{index},{len(controls)}")
-        controls.append(control)
-        weights[control.name] = (1.0, quantum_model.external_field_z * beta)
-        mult = Symbol(f"f{index},{len(mults)}")
-        mults.append(mult)
-        formula &= Equivalent(mult, control & Symbol(f"q{index},{i}"))
+    if quantum_model.external_field_z != 0.0:
+        for i in range(len(quantum_model)):
+            control = Symbol(f"c{index},{len(controls)}")
+            controls.append(control)
+            weights[control.name] = (1.0, quantum_model.external_field_z * beta)
+            mult = Symbol(f"r{index},{len(mults)}")
+            mults.append(mult)
+            formula &= Equivalent(mult, control & Symbol(f"q{index},{i}"))
     # X-directed external field
-    for i in range(len(quantum_model)):
-        control = Symbol(f"c{index},{len(controls)}")
-        controls.append(control)
-        weights[control.name] = (1.0, quantum_model.external_field_x * beta)
-        formula &= Equivalent(Symbol(f"q{index+1},{i}"), control ^
-        Symbol(f"q{index},{i}"))
+    if quantum_model.external_field_x != 0.0:
+        for i in range(len(quantum_model)):
+            control = Symbol(f"c{index},{len(controls)}")
+            controls.append(control)
+            weights[control.name] = (1.0, quantum_model.external_field_x * beta)
+            formula &= Equivalent(Symbol(f"q{index+1},{i}"), control ^
+            Symbol(f"q{index},{i}"))
     for mult in mults:
         weights[mult.name] = (1.0, -1.0)
     for i in range(len(quantum_model)):

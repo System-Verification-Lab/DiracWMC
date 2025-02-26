@@ -10,7 +10,7 @@ if len(sys.argv) != 2:
     exit(1)
 spins = int(sys.argv[1])
 time_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-f = open(f"examples/quantum_ising/random_{spins}_{time_string}.json", "w")
+f = open(f"examples/quantum_ising/random_{spins}.json", "w")
 f.write(json.dumps({
     "spin_count": spins,
     "external_field_x": random.normalvariate(),

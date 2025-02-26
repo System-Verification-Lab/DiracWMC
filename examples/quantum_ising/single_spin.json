@@ -1,5 +1,5 @@
 {
-    "nodes": 1,
-    "external_factor": 3,
-    "interactions": []
+    "spin_count": 1,
+    "external_field_x": 3,
+    "interaction": []
 }

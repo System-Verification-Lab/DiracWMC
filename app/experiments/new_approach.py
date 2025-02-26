@@ -15,8 +15,9 @@ def run():
     content = open(FILENAME, "r").read()
     # Calculate true value
     model = QuantumIsingModel.from_string(content)
+    start = time()
     true_weight = model.partition_function(BETA)
-    print("True partition function:", true_weight)
+    true_runtime = time() - start
     terms = 2
     timed_out = False
     results: dict[str, list[tuple[float, float]]] = {}
@@ -37,6 +38,8 @@ def run():
         print(f"Results {name}:")
         print(" ".join(f"({e},{r})" for e, r in result_list))
         print()
+    print("True partition function:", true_weight)
+    print("True partition function runtime:", true_runtime)
 
 def run_for_terms(model: QuantumIsingModel, terms: int, true_weight: float) -> (
 tuple[float, float] | None):

@@ -6,7 +6,7 @@ import jsonschema
 from sympy import Symbol
 from sympy.logic.boolalg import to_cnf, BooleanFunction, And, Or, Not
 
-WCNFFormat = Literal["cachet", "dpmc", "json"]
+WCNFFormat = Literal["cachet", "dpmc", "json", "ganak"]
 WCNF_FORMATS: tuple[WCNFFormat, ...] = get_args(WCNFFormat)
 
 WCNF_JSON_SCHEMA = {
@@ -314,6 +314,8 @@ class WeightedCNFFormula:
                 return self._to_dpmc()
             case "json":
                 return self._to_json()
+            case "ganak":
+                return self._to_ganak()
             case _:
                 raise RuntimeError(f"Unknown output format {output_format}")
 
@@ -369,6 +371,24 @@ class WeightedCNFFormula:
         for i in filter(lambda x: x != 0, range(-self._num_vars, self._num_vars
         + 1)):
             text.append(f"c p weight {i} {self.weights[i]}")
+        # Clauses
+        for clause in self.formula.clauses:
+            text.append("".join(map(lambda i: str(i) + " ", clause)) + "0")
+        return "\n".join(text)
+
+    def _to_ganak(self) -> str:
+        """ Convert this object to a Ganak formatted string """
+        text: list[str] = []
+        # CNF description
+        text.append(f"p cnf {self._num_vars} {len(self.formula.clauses)}")
+        # Sum-vars
+        vars_string = "".join(map(lambda i: str(i) + " ", range(1,
+        self._num_vars + 1)))
+        text.append(f"c p show {vars_string}0")
+        # Variable weights
+        for i in filter(lambda x: x != 0, range(-self._num_vars, self._num_vars
+        + 1)):
+            text.append(f"c p weight {i} {self.weights[i]} 0")
         # Clauses
         for clause in self.formula.clauses:
             text.append("".join(map(lambda i: str(i) + " ", clause)) + "0")

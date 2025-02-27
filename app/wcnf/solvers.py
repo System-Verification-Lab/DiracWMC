@@ -7,7 +7,7 @@ from time import time
 from typing import Literal, get_args
 from dataclasses import dataclass
 
-SolverType = Literal["cachet", "dpmc", "tensororder"]
+SolverType = Literal["cachet", "dpmc", "tensororder", "ganak"]
 SOLVERS: tuple[SolverType, ...] = get_args(SolverType)
 
 @dataclass
@@ -50,6 +50,7 @@ class Solver:
             case "cachet": return CachetSolver(*args, **kwargs)
             case "dpmc": return DPMCSolver(*args, **kwargs)
             case "tensororder": return TensorOrderSolver(*args, **kwargs)
+            case "ganak": return GanakSolver(*args, **kwargs)
         raise RuntimeError(f"Unsupported solver type {solver_type}")
 
     def run_solver(self, formula: WeightedCNFFormula) -> SolverResult:
@@ -204,4 +205,50 @@ class TensorOrderSolver(Solver):
         if time_taken is None:
             time_taken = -1.0
             log_warning("TensorOrder measured time not found")
+        return SolverResult(True, time_taken, count)
+    
+class GanakSolver(Solver):
+    """ Solver interface for the Ganak solver """
+
+    def run_solver(self, formula: WeightedCNFFormula) -> SolverResult:
+        """ Run the solver on the given weighted CNF formula and return an
+            object with several statistics, including total weight and runtime
+            """
+        formula = formula.copy()
+        formula.weights.add_missing()
+        log_info("Creating output file...")
+        self._create_file(formula)
+        log_info("Running solver...")
+        result = self._calculate_from_file()
+        return result
+    
+    def _create_file(self, formula: WeightedCNFFormula):
+        """ Create the output file to pass to the solver """
+        with open(self.output_path, "w") as f:
+            f.write(formula.to_string("ganak"))
+
+    def _calculate_from_file(self) -> float:
+        """ Convert the given wCNF formula to the format that the solver can use
+            """
+        cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..",
+        "..", "solvers")
+        filepath = os.path.join(os.getcwd(), self.output_path)
+        p = Popen(["./ganak_11433e58c", filepath], cwd=cwd, stdout=PIPE)
+        try:
+            output, _ = p.communicate(timeout=self.timeout)
+        except TimeoutExpired:
+            return SolverResult(False)
+        result = output.decode("utf-8")
+        time_taken = count = None
+        for line in result.split("\n"):
+            if line.startswith("c o Total time [Arjun+GANAK]:"):
+                time_taken = float(line.split()[-1])
+            if line.startswith("c s exact arb"):
+                count = float(line.split()[-1])
+                log_stat("Solver output", count)
+        if count is None:
+            return SolverResult(False)
+        if time_taken is None:
+            time_taken = -1.0
+            log_warning("Ganak measured time not found")
         return SolverResult(True, time_taken, count)

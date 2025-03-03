@@ -101,7 +101,7 @@ class QuantumIsingModel:
     def hamiltonian(self) -> np.matrix:
         """ Determine the Hamiltonian matrix of this model. This method is very
             slow for large models """
-        return np.matrix(self._interaction_hamiltonian() +
+        return -np.matrix(self._interaction_hamiltonian() +
         self._external_field_hamiltonian("x") +
         self._external_field_hamiltonian("z"))
     

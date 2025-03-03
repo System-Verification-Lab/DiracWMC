@@ -1,7 +1,7 @@
 
 from argparse import ArgumentParser
 from ..formula import WeightedCNFFormula
-from . import Solver, SolverResult, SOLVERS
+from . import Solver, SOLVERS
 
 parser = ArgumentParser(description="Runs a solver on the given weighted CNF "
 "JSON file")

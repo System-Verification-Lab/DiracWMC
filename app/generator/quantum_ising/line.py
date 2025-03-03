@@ -17,7 +17,7 @@ ring: bool = False) -> QuantumIsingModel:
     for i in range(size if ring else size - 1):
         strength = weight_func()
         model[i, (i + 1) % size] = strength
-    model.external_field_x = random.normalvariate()
+    model.external_field_x = abs(random.normalvariate())
     return model
 
 if __name__ == "__main__":

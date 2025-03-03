@@ -24,7 +24,7 @@ if ":" in args.sizes:
     sizes = list(range(*(int(x) for x in args.sizes.split(":"))))
 else:
     sizes = [int(x) for x in args.sizes.split(",")]
-solver = Solver.from_solver_name(args.solver)
+solver = Solver.from_solver_name(args.solver, timeout=args.timeout)
 results: list[tuple[int, float]] = []
 for size in sizes:
     model = generate_square_lattice(size)

@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 from ..wcnf.solver import SOLVERS, Solver
 from ..generator.quantum_ising import generate_line
-from ..converter import ising_to_wcnf, matrix_quantum_ising_to_wcnf
+from ..converter import matrix_quantum_ising_to_wcnf
 
 BETA = 1.0
 

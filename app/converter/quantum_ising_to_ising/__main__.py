@@ -7,9 +7,9 @@ parser = ArgumentParser(description="Approximate a quantum Ising model using a "
 "classical ising model (the partition function of the classical model "
 "approximates the quantum model). The input is JSON. The output is two lines: "
 "The first line has the factor with which the partition function of the "
-"classical model needs to be multiplied to approximate the partition function "
-"of the quantum model. The second line has a JSON representation of the "
-"classical model")
+"classical model needs to be multiplied *per spin* to approximate the "
+"partition function of the quantum model. The second line has a JSON "
+"representation of the classical model")
 parser.add_argument("filename", type=str, help="The path to the quantum Ising "
 "model JSON file")
 parser.add_argument("-o", "--output", type=str, help="The output file to store "

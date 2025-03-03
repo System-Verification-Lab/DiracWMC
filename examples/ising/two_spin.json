@@ -1,7 +1,7 @@
 {
     "$schema": "../../app/ising/schema.json",
     "spin_count": 2,
-    "external_field": [1, 1],
+    "external_field": [1.0, 1.0],
     "interaction": [
         [0, 1, 1.0]
     ]

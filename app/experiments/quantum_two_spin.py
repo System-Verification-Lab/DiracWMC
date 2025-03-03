@@ -1,5 +1,5 @@
 
-from ..wcnf.solvers import SOLVERS, SolverType, Solver
+from ..wcnf.solver import SOLVERS, SolverType, Solver
 from ..models import QuantumIsingModel
 from ..converters import quantum_ising_to_wcnf
 from ..logger import log_info, log_stat

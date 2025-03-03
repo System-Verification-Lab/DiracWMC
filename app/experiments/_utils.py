@@ -1,6 +1,6 @@
 
 from ..models import IsingModel
-from ..wcnf.solvers import SolverType, Solver
+from ..wcnf.solver import SolverType, Solver
 from ..converters import ising_to_wcnf
 from ..logger import ConsoleColor, log_warning, log_stat, log_info
 

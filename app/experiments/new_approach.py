@@ -1,5 +1,5 @@
 
-from ..wcnf.solvers import DPMCSolver
+from ..wcnf.solver import DPMCSolver
 from ..models import QuantumIsingModel
 from ..converters import matrix_quantum_ising_to_wcnf
 from time import time

@@ -3,7 +3,7 @@
 
 from ..generators.ising import generate_square_lattice
 from ._utils import do_ising_experiment
-from ..wcnf.solvers import SOLVERS, SolverType
+from ..wcnf.solver import SOLVERS, SolverType
 
 def run():
     """ Run all square lattice Ising experiments and print results to console

@@ -1,0 +1,24 @@
+{
+    "type": "object",
+    "required": ["num_vars", "positive_weights", "negative_weights", "clauses"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {"type": "string"},
+        "num_vars": {"type": "integer"},
+        "positive_weights": {
+            "type": "array",
+            "items": {"type": ["number", "null"]}
+        },
+        "negative_weights": {
+            "type": "array",
+            "items": {"type": ["number", "null"]}
+        },
+        "clauses": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {"type": "integer"}
+            }
+        }
+    }
+}

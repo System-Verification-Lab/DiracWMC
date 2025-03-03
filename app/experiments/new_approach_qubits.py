@@ -2,44 +2,43 @@
 from ..wcnf.solvers import DPMCSolver
 from ..models import QuantumIsingModel
 from ..converters import matrix_quantum_ising_to_wcnf
+from ..generators.quantum_ising import generate_ring
 from time import time
 
-SOLVER_TIMEOUT = 1.0
-ERROR_THRESHOLD = 1e-13
-FILENAME = "examples/quantum_ising/two_spin.json"
+ERROR_THRESHOLD = 1e-2
 BETA = 1.0
-TERMS_LIMIT = 30
+SOLVER_TIMEOUT = 30.0
+SPINS_LIMIT = 5
 
 def run():
     """ Run this experiment """
-    content = open(FILENAME, "r").read()
-    # Calculate true value
-    model = QuantumIsingModel.from_string(content)
-    start = time()
-    true_weight = model.partition_function(BETA)
-    true_runtime = time() - start
-    terms = 2
-    timed_out = False
-    results: dict[str, list[tuple[float, float]]] = {}
-    while not timed_out:
+    # List of (qubits, runtime)
+    results: dict[str, list[tuple[int, float]]] = {
+        "solver": [],
+        "direct": [],
+    }
+    for i in range(1, SPINS_LIMIT + 1):
+        model = generate_ring(i, line=True)
+        # Measure true partition function
         start = time()
-        result = run_for_terms(model, terms, true_weight)
-        end = time()
-        if result is None:
-            timed_out = True
-        else:
-            results.setdefault("total", []).append((result[0], end - start))
-            results.setdefault("solver", []).append(result)
-        terms += 1
-        if terms > TERMS_LIMIT:
-            break
+        true_weight = model.partition_function(BETA)
+        true_runtime = time() - start
+        error, runtime = float("inf"), 0.0
+        terms = 2
+        while error > ERROR_THRESHOLD:
+            print("qubits =", i, "terms =", terms)
+            cur = run_for_terms(model, terms, true_weight)
+            if cur is None:
+                raise RuntimeError("Timeout")
+            error, runtime = cur
+            terms += 1
+        results["solver"].append((i, runtime))
+        results["direct"].append((i, true_runtime))
     for name, result_list in results.items():
         print()
         print(f"Results {name}:")
         print(" ".join(f"({e},{r})" for e, r in result_list))
         print()
-    print("True partition function:", true_weight)
-    print("True partition function runtime:", true_runtime)
 
 def run_for_terms(model: QuantumIsingModel, terms: int, true_weight: float) -> (
 tuple[float, float] | None):
@@ -54,8 +53,5 @@ tuple[float, float] | None):
         return None
     weight = result.total_weight
     error = abs(weight / true_weight - 1.0)
-    if error < ERROR_THRESHOLD:
-        print("Error threshold reached")
-        return None
     print(f"Error for terms={terms}:", error)
     return (error, result.runtime)

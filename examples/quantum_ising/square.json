@@ -1,7 +1,7 @@
 {
-    "nodes": 4,
-    "external_factor": 1.2,
-    "interactions": [
+    "spin_count": 4,
+    "external_field_x": 1.2,
+    "interaction": [
         [0, 1, 1],
         [1, 2, 2.5],
         [2, 3, 1.2],

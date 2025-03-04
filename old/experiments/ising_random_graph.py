@@ -3,7 +3,7 @@
 
 from ..generators.ising import generate_random_graph
 from ._utils import do_ising_experiment
-from ..wcnf.solvers import SOLVERS, SolverType
+from ..wcnf.solver import SOLVERS, SolverType
 
 def run():
     """ Run all random graph Ising experiments and print results to console """

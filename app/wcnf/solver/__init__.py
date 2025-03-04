@@ -1,6 +1,6 @@
 
-from .formula import WeightedCNFFormula
-from ..logger import log_info, log_warning, log_stat
+from ..formula import WeightedCNFFormula
+from ...logger import log_info, log_warning, log_stat
 import os
 from subprocess import Popen, PIPE, TimeoutExpired
 from time import time
@@ -79,7 +79,7 @@ class DPMCSolver(Solver):
     def _calculate_from_file(self) -> SolverResult:
         """ Calculate total weight of wCNF formula in the given .cnf file """
         cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..",
-        "..", "solvers", "DPMC")
+        "..", "..", "solvers", "DPMC")
         filepath = os.path.join(os.getcwd(), self.output_path)
         infile = open(filepath, "r")
         p1 = Popen(["./lg/build/lg", "./lg/solvers/flow-cutter-pace17/"
@@ -132,7 +132,7 @@ class CachetSolver(Solver):
         """ Convert the given wCNF formula to the format that the solver can use
             """
         cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..",
-        "..", "solvers", "cachet")
+        "..", "..", "solvers", "cachet")
         filepath = os.path.join(os.getcwd(), self.output_path)
         p = Popen(["./cachet", filepath], cwd=cwd, stdout=PIPE)
         try:
@@ -181,7 +181,7 @@ class TensorOrderSolver(Solver):
         """ Convert the given wCNF formula to the format that the solver can use
             """
         cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..",
-        "..", "solvers", "TensorOrder")
+        "..", "..", "solvers", "TensorOrder")
         filepath = os.path.join(os.getcwd(), self.output_path)
         infile = open(filepath, "r")
         p = Popen(["docker", "run", "-i", "tensororder:latest", "python",
@@ -231,7 +231,7 @@ class GanakSolver(Solver):
         """ Convert the given wCNF formula to the format that the solver can use
             """
         cwd = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..",
-        "..", "solvers")
+        "..", "..", "solvers")
         filepath = os.path.join(os.getcwd(), self.output_path)
         p = Popen(["./ganak_11433e58c", filepath], cwd=cwd, stdout=PIPE)
         try:

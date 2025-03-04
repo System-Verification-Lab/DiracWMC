@@ -1,7 +1,7 @@
 
 from argparse import ArgumentParser, ArgumentTypeError
 from .wcnf.formula import WCNFFormat, WCNF_FORMATS
-from .wcnf.solvers import Solver, SolverType, SOLVERS
+from .wcnf.solver import Solver, SolverType, SOLVERS
 from .logger import log_stat
 
 class Arguments:

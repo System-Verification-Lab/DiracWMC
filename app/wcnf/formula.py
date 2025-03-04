@@ -5,33 +5,13 @@ import json
 import jsonschema
 from sympy import Symbol
 from sympy.logic.boolalg import to_cnf, BooleanFunction, And, Or, Not
+import os
 
 WCNFFormat = Literal["cachet", "dpmc", "json", "ganak"]
 WCNF_FORMATS: tuple[WCNFFormat, ...] = get_args(WCNFFormat)
 
-WCNF_JSON_SCHEMA = {
-    "type": "object",
-    "required": ["num_vars", "positive_weights", "negative_weights", "clauses"],
-    "additionalProperties": False,
-    "properties": {
-        "num_vars": {"type": "integer"},
-        "positive_weights": {
-            "type": "array",
-            "items": {"type": ["number", "null"]},
-        },
-        "negative_weights": {
-            "type": "array",
-            "items": {"type": ["number", "null"]},
-        },
-        "clauses": {
-            "type": "array",
-            "items": {
-                "type": "array",
-                "items": {"type": "integer"},
-            },
-        },
-    },
-}
+WCNF_JSON_SCHEMA = json.loads(open(os.path.join(os.path.dirname(__file__),
+"schema.json"), "r").read())
 
 class CNFFormula:
     """ A boolean formula in conjunctive normal form """
@@ -274,9 +254,9 @@ class WeightedCNFFormula:
         assert (len(data["positive_weights"]) == len(data["negative_weights"])
         == data["num_vars"])
         wcnf.formula.clauses = data["clauses"]
-        for i, value in enumerate(data["positive_weights"]):
+        for i, value in enumerate(data["positive_weights"], 1):
             wcnf.weights[i] = value
-        for i, value in enumerate(data["negative_weights"]):
+        for i, value in enumerate(data["negative_weights"], 1):
             wcnf.weights[-i] = value
         return wcnf
 

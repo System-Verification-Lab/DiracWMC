@@ -1,7 +1,7 @@
 """ Determine the two spin partition function using a new approach """
 
 from ..wcnf.formula import WeightedCNFFormula, CNFFormula, VariableWeights
-from ..wcnf.solvers import DPMCSolver, SolverResult
+from ..wcnf.solver import DPMCSolver, SolverResult
 from ..models import QuantumIsingModel
 from sympy import Symbol, And, Equivalent, Or, Not
 from sympy.logic.boolalg import BooleanFunction

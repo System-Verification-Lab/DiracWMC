@@ -1,5 +1,5 @@
 {
-    "$schema": "../../app/quantumising/schema.json",
+    "$schema": "../../app/quantum_ising/schema.json",
     "spin_count": 2,
     "external_field_x": 1.0,
     "interaction": [

@@ -1,4 +1,5 @@
 {
+    "$schema": "../../app/quantum_ising/schema.json",
     "spin_count": 1,
     "external_field_x": 3,
     "interaction": []

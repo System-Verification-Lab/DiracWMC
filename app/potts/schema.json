@@ -31,8 +31,8 @@
                     {"type": "integer"},
                     {"type": "number"}
                 ],
-                "minItems": 3,
-                "maxItems": 3
+                "minItems": 5,
+                "maxItems": 5
             }
         }
     }

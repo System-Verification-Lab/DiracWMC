@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["sites", "external_field", "interaction"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {"type": "string"},
+        "sites": {"type": "integer"},
+        "external_field": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": [
+                    {"type": "integer"},
+                    {"type": "integer"},
+                    {"type": "number"}
+                ],
+                "minItems": 3,
+                "maxItems": 3
+            }
+        },
+        "interaction": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": [
+                    {"type": "integer"},
+                    {"type": "integer"},
+                    {"type": "integer"},
+                    {"type": "integer"},
+                    {"type": "number"}
+                ],
+                "minItems": 3,
+                "maxItems": 3
+            }
+        }
+    }
+}

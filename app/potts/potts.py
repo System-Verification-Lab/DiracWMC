@@ -3,6 +3,8 @@ from typing import Any, Iterable
 import json
 import os
 import jsonschema
+from itertools import product
+import math
 
 JSON_SCHEMA = json.loads(open(os.path.join(os.path.dirname(__file__),
 "schema.json"), "r").read())
@@ -13,14 +15,15 @@ class PottsModel:
         strengths. Note that the states are numbered 0,...,q-1 and the sites are
         numbered 0,...,n-1 """
     
-    def __init__(self, sites: int, *, interaction: dict[tuple[int, int, int,
-    int], float] | None = None, external_field: dict[tuple[int, int], float] |
-    None = None):
+    def __init__(self, sites: int, states: int, *, interaction: dict[tuple[int,
+    int, int, int], float] | None = None, external_field: dict[tuple[int, int],
+    float] | None = None):
         """ Constructor, given the number of sites and functions indicating
             interaction strengths and external field strengths. The interaction
             strengths map from (i, j, si, sj) and the external field strnegths
             from (i, si) """
         self._sites = sites
+        self._states = states
         self._interaction = {} if interaction is None else interaction.copy()
         self._external_field = ({} if external_field is None else
         external_field.copy())
@@ -60,7 +63,7 @@ class PottsModel:
         """ Convert a JSON formatted string to a Potts model """
         data: dict[str, Any] = json.loads(text)
         jsonschema.validate(data, JSON_SCHEMA)
-        model = cls(data["sites"])
+        model = cls(data["sites"], data["states"])
         for inter in data["interaction"]:
             model.set_interaction(*inter)
         for ext in data["external_field"]:
@@ -71,6 +74,7 @@ class PottsModel:
         """ Convert this Potts model to JSON """
         return json.dumps({
             "sites": self._sites,
+            "states": self._states,
             "external_field": [(*k, v) for k, v in
             self._external_field.items()],
             "interaction": [(*k, v) for k, v in self._interaction.items()],
@@ -114,11 +118,22 @@ class PottsModel:
     def hamiltonian(self, config: Iterable[int]) -> float:
         """ Get the hamiltonian function of a specific configuration of states,
             which needs to have the same length as this object """
-        ...
+        values = list(config)
+        assert len(values) == self._states
+        total = 0.0
+        for i, j in product(range(self._sites), repeat=2):
+            total += self._interaction.get((i, j, config[i], config[j]), 0.0)
+        for i in range(self._sites):
+            total += self._external_field.get((i, config[i]), 0.0)
+        return total
 
     def partition_function(self, beta: float = 1.0) -> float:
-        """ Get the partition function value with constant multiplier beta """
-        ...
+        """ Get the partition function value with constant multiplier beta.
+            NOTE: Uses brute force, so this function is slow """
+        total = 0.0
+        for config in product(range(self._states), repeat=self._sites):
+            total += math.exp(-beta * self.hamiltonian(config))
+        return total
 
     def external_field(self) -> Iterable[tuple[int, int, float]]:
         """ Get an iterator over all external field strengths in the model as
@@ -129,3 +144,13 @@ class PottsModel:
         """ Get an iterator over all interaction strengths in the model as (i,
             j, si, sj, strength) """
         yield from ((*k, v) for k, v in self._interaction.items())
+
+    @property
+    def sites(self) -> int:
+        """ Get the number of sites of this model """
+        return self._sites
+    
+    @property
+    def states(self) -> int:
+        """ Get the number of states every site in this model can have """
+        return self._states

@@ -1,0 +1,11 @@
+{
+    "$schema": "../../app/potts/schema.json",
+    "sites": 2,
+    "states": 3,
+    "interaction": [
+        [0, 1, 0, 0, 1.0],
+        [0, 1, 1, 1, 1.0],
+        [0, 1, 2, 2, 1.0]
+    ],
+    "external_field": []
+}

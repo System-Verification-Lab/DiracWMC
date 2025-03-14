@@ -1,0 +1,2 @@
+
+from .potts import PottsModel

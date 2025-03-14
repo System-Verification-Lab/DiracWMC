@@ -119,7 +119,7 @@ class PottsModel:
         """ Get the hamiltonian function of a specific configuration of states,
             which needs to have the same length as this object """
         values = list(config)
-        assert len(values) == self._states
+        assert len(values) == self._sites
         total = 0.0
         for i, j in product(range(self._sites), repeat=2):
             total += self._interaction.get((i, j, config[i], config[j]), 0.0)

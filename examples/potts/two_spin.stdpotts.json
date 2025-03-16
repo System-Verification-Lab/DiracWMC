@@ -1,0 +1,9 @@
+{
+    "$schema": "../../app/potts/standard_schema.json",
+    "sites": 2,
+    "states": 2,
+    "interaction_strength": 1.0,
+    "interaction": [
+        [0, 1]
+    ]
+}

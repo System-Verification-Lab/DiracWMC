@@ -49,10 +49,11 @@ class PottsModel:
         else:
             self.set_external_field(*key, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """ Canonical representation """
-        return (f"{self.__class__.__name__}({self._sites!r}, interaction="
-        f"{self._interaction!r}, external_field={self._external_field!r})")
+        return (f"{self.__class__.__name__}({self._sites!r}, {self._states!r}, "
+        f"interaction={self._interaction!r}, external_field="
+        f"{self._external_field!r})")
 
     def __str__(self) -> str:
         """ Convert this Potts model to JSON """

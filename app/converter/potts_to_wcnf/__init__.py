@@ -1,5 +1,5 @@
 
-from ...potts import PottsModel
+from ...potts import PottsModel, StandardPottsModel
 from ...wcnf import WeightedCNFFormula
 from itertools import product
 import numpy as np
@@ -34,3 +34,12 @@ def potts_to_wncf(model: PottsModel, beta: float) -> WeightedCNFFormula:
         wcnf.weights[index] = np.exp(-beta * strength)
         wcnf.weights[-index] = 1.0
     return wcnf
+
+def standard_potts_to_potts(model: StandardPottsModel) -> PottsModel:
+    """ Convert a standard potts model object to a potts model object, that
+        still represents the same model """
+    interaction: dict[tuple[int, int, int, int], float] = {}
+    for i, j in model.interactions():
+        for s in range(model.states):
+            interaction[i, j, s, s] = -model.interaction_strength
+    return PottsModel(model.sites, model.states, interaction=interaction)

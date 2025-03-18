@@ -43,3 +43,50 @@ def standard_potts_to_potts(model: StandardPottsModel) -> PottsModel:
         for s in range(model.states):
             interaction[i, j, s, s] = -model.interaction_strength
     return PottsModel(model.sites, model.states, interaction=interaction)
+
+def standard_potts_to_wcnf(model: StandardPottsModel, beta: float) -> (
+WeightedCNFFormula):
+    """ Convert a standard potts model to a weighted CNF formula, such that the
+        partition function of the model is equal to the total weight of the
+        formula """
+    n, q = model.sites, model.states
+    k = len(bin(q - 1)[2:])
+    interactions = list(model.interactions())
+    strength = model.interaction_strength
+    wcnf = WeightedCNFFormula(n * k + len(interactions) * k)
+    # For every interactions, add clause all(x <=> y) <=> a
+    for index, (i, j) in enumerate(interactions):
+        start_index = n * k + 1 + index * k
+        start_i, start_j = k * i + 1, k * j + 1
+        wcnf.formula.clauses += [
+            [start_index, start_i, start_j],
+            [start_index, -start_i, -start_j],
+            [-start_index, -start_i, start_j],
+            [-start_index, start_i, -start_j],
+        ]
+        for idx in range(1, k):
+            wcnf.formula.clauses += [
+                [-(start_index + idx), start_index + idx - 1],
+                [-(start_index + idx), -(start_i + idx), start_j + idx],
+                [-(start_index + idx), start_i + idx, -(start_j + idx)],
+                [start_index + idx, -(start_index + idx - 1), start_i + idx,
+                start_j + idx],
+                [start_index + idx, -(start_index + idx - 1), -(start_i + idx),
+                -(start_j + idx)],
+            ]
+        for idx in range(start_index, start_index + k):
+            wcnf.weights[idx] = wcnf.weights[-idx] = 1.0
+        wcnf.weights[start_index + k - 1] = np.exp(beta * strength)
+    # Add restriction that any x1..xk should be less than q, and add weight 1
+    # to all of these variables
+    for index in range(n):
+        start_index = index * k + 1
+        ones = []
+        for b, idx in zip(bin(q - 1)[2:], range(start_index, start_index + k)):
+            if b == "1":
+                ones.append(idx)
+            else:
+                wcnf.formula.clauses.append([*(-o for o in ones), -idx])
+        for idx in range(start_index, start_index + k):
+            wcnf.weights[idx] = wcnf.weights[-idx] = 1.0
+    return wcnf

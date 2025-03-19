@@ -12,6 +12,7 @@ print(
     "experiments.*                      Several experiments can be run. See the `app/experiments` folder for all experiments\n"
     "generator.ising.random_graph       Generate an Ising model on a random graph with random weights\n"
     "generator.ising.square_lattice     Generate an Ising model on a square lattice with random weights\n"
+    "generator.potts.square_lattice     Generate a Potts model on a square lattice with random weights\n"
     "generator.quantum_ising.line       Generate a 1D quantum Ising model on a line or ring with random weights\n"
     "ising                              Parse an Ising model JSON file and optionally calculate the partition function using brute force\n"
     "potts                              Parse a Potts model JSON file and optionally calculate the partition function using brute force\n"

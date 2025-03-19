@@ -7,3 +7,8 @@
 
 - [ ] Classical Potts model to weighted CNF
 - [ ] Write stuff down properly / proofs
+
+- [ ] Potts experiments
+- [ ] Python library matrix representation
+- [ ] Higher-order trotter formulae
+- [ ] Quantum Potts

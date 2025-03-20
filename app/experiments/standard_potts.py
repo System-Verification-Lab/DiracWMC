@@ -29,38 +29,48 @@ False, help="When present, a timeout results in the result thus far being "
 "displayed instead of an error")
 parser.add_argument("-g", "--graph-type", type=str, choices=["square_lattice",
 "random_graph"], default="square_lattice", help="Graph type to perform "
-"experiments on")
+"experiments on. Random graphs are regular with degree 4")
+parser.add_argument("-r", "--repeats", type=int, default=1, help="Number of "
+"times to repeat an experiment and average results over. Defaults to 1")
 args = parser.parse_args()
 
 assert args.states >= 2
+assert args.repeats >= 1
 if ":" in args.sizes:
     sizes = list(range(*(int(x) for x in args.sizes.split(":"))))
 else:
     sizes = [int(x) for x in args.sizes.split(",")]
 solver = Solver.from_solver_name(args.solver, timeout=args.timeout)
 results: list[tuple[int, float]] = []
+timed_out = False
 for size in sizes:
     assert size >= 1
-    if args.graph_type == "square_lattice":
-        model = generate_standard_square_lattice(size, args.states)
-    else:
-        model = generate_standard_random_graph(size, args.states)
-    if args.method == "direct":
-        formula = standard_potts_to_wcnf(model, BETA)
-    else:
-        formula = potts_to_wcnf(standard_potts_to_potts(model), BETA)
-    result = solver.run_solver(formula)
-    if not result.success:
-        if args.run_until_timeout:
-            print("Solver timed out")
-            break
+    total = 0.0
+    for _ in range(args.repeats):
+        if args.graph_type == "square_lattice":
+            model = generate_standard_square_lattice(size, args.states)
         else:
-            raise RuntimeError("Solver timed out")
-    if args.measure_error:
-        true_weight = model.partition_function(BETA)
-        found_weight = result.total_weight
-        error = abs(found_weight / true_weight - 1.0)
-        results.append((size, error))
-    else:
-        results.append((size, result.runtime))
+            model = generate_standard_random_graph(size, args.states, 4)
+        if args.method == "direct":
+            formula = standard_potts_to_wcnf(model, BETA)
+        else:
+            formula = potts_to_wcnf(standard_potts_to_potts(model), BETA)
+        result = solver.run_solver(formula)
+        if not result.success:
+            if args.run_until_timeout:
+                print("Solver timed out")
+                timed_out = True
+                break
+            else:
+                raise RuntimeError("Solver timed out")
+        if args.measure_error:
+            true_weight = model.partition_function(BETA)
+            found_weight = result.total_weight
+            error = abs(found_weight / true_weight - 1.0)
+            total += error
+        else:
+            total += result.runtime
+    if timed_out:
+        break
+    results.append((size, total / args.repeats))
 print(" ".join(f"({r[0]}, {r[1]})" for r in results))

@@ -1,15 +1,16 @@
 
 from argparse import ArgumentParser
 from ..wcnf.solver import SOLVERS, Solver
-from ..generator.potts import generate_standard_square_lattice
+from ..generator.potts import (generate_standard_square_lattice,
+generate_standard_random_graph)
 from ..converter import (potts_to_wcnf, standard_potts_to_potts,
 standard_potts_to_wcnf)
 
 BETA = 1.0
 
-parser = ArgumentParser(description="Potts model square lattice experiments. "
-"Outputs a space-separated list of tuples (size, runtime), unless error "
-"calculation is enabled")
+parser = ArgumentParser(description="Potts model experiments. Outputs a "
+"space-separated list of tuples (size, runtime), unless error calculation is "
+"enabled")
 parser.add_argument("sizes", type=str, help="A comma-separated list of lattice "
 "sizes, or a string in the format start:stop:step where stop is not included")
 parser.add_argument("-s", "--solver", type=str, choices=SOLVERS, default="dpmc",
@@ -26,6 +27,9 @@ help="Measure relative error instead of runtime and put this is output")
 parser.add_argument("-x", "--run-until-timeout", action="store_true", default=
 False, help="When present, a timeout results in the result thus far being "
 "displayed instead of an error")
+parser.add_argument("-g", "--graph-type", type=str, choices=["square_lattice",
+"random_graph"], default="square_lattice", help="Graph type to perform "
+"experiments on")
 args = parser.parse_args()
 
 assert args.states >= 2
@@ -37,7 +41,10 @@ solver = Solver.from_solver_name(args.solver, timeout=args.timeout)
 results: list[tuple[int, float]] = []
 for size in sizes:
     assert size >= 1
-    model = generate_standard_square_lattice(size, args.states)
+    if args.graph_type == "square_lattice":
+        model = generate_standard_square_lattice(size, args.states)
+    else:
+        model = generate_standard_random_graph(size, args.states)
     if args.method == "direct":
         formula = standard_potts_to_wcnf(model, BETA)
     else:

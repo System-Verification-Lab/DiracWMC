@@ -1,3 +1,4 @@
 
 from .square_lattice import (generate_square_lattice,
 generate_standard_square_lattice)
+from .random_graph import generate_random_graph, generate_standard_random_graph

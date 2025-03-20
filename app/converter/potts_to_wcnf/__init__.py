@@ -4,7 +4,7 @@ from ...wcnf import WeightedCNFFormula
 from itertools import product
 import numpy as np
 
-def potts_to_wncf(model: PottsModel, beta: float) -> WeightedCNFFormula:
+def potts_to_wcnf(model: PottsModel, beta: float) -> WeightedCNFFormula:
     """ Convert a potts model to a weighted CNF formula, such that the partition
         function of the model is equal to the total weight of the formula """
     n, q = model.sites, model.states

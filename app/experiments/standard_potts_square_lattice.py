@@ -23,6 +23,9 @@ default="direct", help="The method to use when converting a standard Potts "
 "model to a weighted CNF formula")
 parser.add_argument("-e", "--measure-error", action="store_true", default=False,
 help="Measure relative error instead of runtime and put this is output")
+parser.add_argument("-x", "--run-until-timeout", action="store_true", default=
+False, help="When present, a timeout results in the result thus far being "
+"displayed instead of an error")
 args = parser.parse_args()
 
 assert args.states >= 2
@@ -41,7 +44,11 @@ for size in sizes:
         formula = potts_to_wcnf(standard_potts_to_potts(model), BETA)
     result = solver.run_solver(formula)
     if not result.success:
-        raise RuntimeError("Solver timed out")
+        if args.run_until_timeout:
+            print("Solver timed out")
+            break
+        else:
+            raise RuntimeError("Solver timed out")
     if args.measure_error:
         true_weight = model.partition_function(BETA)
         found_weight = result.total_weight

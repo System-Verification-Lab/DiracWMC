@@ -89,6 +89,49 @@ class WCNFMatrix:
             input_vars += [index_map[i, v] for v in mat._input_vars]
             output_vars += [index_map[i, v] for v in mat._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
+    
+    @classmethod
+    def multiply(self, *matrices: "WCNFMatrix") -> "WCNFMatrix":
+        """ Compute the matrix product of one or more matrices with the same
+            dimensions """
+        assert len(matrices) > 0
+        assert all(m.dimension == matrices[0].dimension for m in matrices)
+        matrices = tuple(reversed(matrices))
+        index_map = {}
+        index_count = 1
+        for i, mat in enumerate(matrices):
+            index_map[i, mat._condition_var] = 1
+            index_map[i, -mat._condition_var] = -1
+        for i in range(len(matrices) - 1):
+            mat = matrices[i]
+            next_mat = matrices[i + 1]
+            for ov, iv in zip(mat._output_vars, next_mat._input_vars):
+                index_count += 1
+                index_map[i + 1, iv] = index_map[i, ov] = index_count
+                index_map[i + 1, -iv] = index_map[i, -ov] = -index_count
+        for i, mat in enumerate(matrices):
+            for v in range(1, len(mat._wcnf) + 1):
+                if (i, v) in index_map:
+                    continue
+                index_count += 1
+                index_map[i, v] = index_count
+                index_map[i, -v] = -index_count
+        wcnf = WeightedCNFFormula(index_count)
+        # Set correct weights
+        for v in range(1, index_count + 1):
+            wcnf.weights[v] = wcnf.weights[-v] = 1.0
+        for i, mat in enumerate(matrices):
+            for v in range(1, len(mat._wcnf) + 1):
+                wcnf.weights[index_map[i, v]] *= mat._wcnf.weights[v]
+                wcnf.weights[-index_map[i, v]] *= mat._wcnf.weights[-v]
+        # Add clauses
+        for i, mat in enumerate(matrices):
+            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
+            clause in mat._wcnf.formula.clauses]
+        input_vars = [index_map[0, v] for v in matrices[0]._input_vars]
+        output_vars = [index_map[len(matrices) - 1, v] for v in
+        matrices[-1]._output_vars]
+        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
     @property
     def size(self) -> int:

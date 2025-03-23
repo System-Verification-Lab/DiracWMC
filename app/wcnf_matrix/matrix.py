@@ -58,8 +58,12 @@ class WCNFMatrix:
         return self.size
 
     def __pow__(self, other: "WCNFMatrix") -> "WCNFMatrix":
-        """ Computer the kronecker product of this matrix with another """
+        """ Compute the kronecker product of this matrix with another """
         return self.__class__.kronecker(self, other)
+
+    def __mul__(self, other: "WCNFMatrix") -> "WCNFMatrix":
+        """ Compute the matrix product of this matrix with another """
+        return self.__class__.multiply(self, other)
 
     @classmethod
     def kronecker(self, *matrices: "WCNFMatrix") -> "WCNFMatrix":

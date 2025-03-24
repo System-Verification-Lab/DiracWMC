@@ -104,6 +104,15 @@ class WCNFMatrix:
         """ The dimension of the matrix, which is 2^n """
         return 1 << len(self._input_vars)
 
+    def trace(self) -> "WeightedCNFFormula":
+        """ Get a weighted CNF formula such that the total weight of the formula
+            is equal to the trace of the matrix """
+        wcnf = self._wcnf.copy()
+        wcnf.formula.clauses.append([self._condition_var])
+        for x, y in zip(self._input_vars, self._output_vars):
+            wcnf.formula.clauses += [[x, -y], [-x, y]]
+        return wcnf
+
     @classmethod
     def kronecker(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
         """ Compute the kronecker product matrix of one or more other matrices

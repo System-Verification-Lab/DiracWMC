@@ -1,4 +1,5 @@
 
+from itertools import product
 from typing import Iterable
 from ..wcnf import WeightedCNFFormula, CNFFormula, VariableWeights
 
@@ -97,12 +98,18 @@ class WCNFMatrix:
     @property
     def size(self) -> int:
         """ The total number of entries in the matrix, which is 2^(2n) """
-        return 1 << (2 * len(self._input_vars))
+        return 1 << (2 * self.n)
 
     @property
     def dimension(self) -> int:
         """ The dimension of the matrix, which is 2^n """
-        return 1 << len(self._input_vars)
+        return 1 << self.n
+
+    @property
+    def n(self) -> int:
+        """ The logarithmic size of the matrix, such that this matrix is a
+            2^n x 2^n matrix """
+        return len(self._input_vars)
 
     def trace(self) -> "WeightedCNFFormula":
         """ Get a weighted CNF formula such that the total weight of the formula
@@ -112,6 +119,49 @@ class WCNFMatrix:
         for x, y in zip(self._input_vars, self._output_vars):
             wcnf.formula.clauses += [[x, -y], [-x, y]]
         return wcnf
+
+    def exp(self, terms: int) -> "WCNFMatrix":
+        """ Get the representation of the matrix sum(k=0..terms-1) matrix^k/k!,
+            which is an approximation of e^matrix """
+        assert terms >= 1
+        if terms == 1:
+            return self.__class__.identity(self.n)
+        index_map = {}
+        index_count = 1
+        for i in range(1, terms - 1):
+            for iv, ov in zip(self._input_vars, self._output_vars):
+                if (i, ov) not in index_map:
+                    index_count += 1
+                    index_map[i, ov] = index_count
+                    index_map[i, -ov] = -index_count
+                index_map[i + 1, iv] = index_map[i, ov]
+                index_map[i + 1, -iv] = index_map[i, -ov]
+        for i in range(1, terms):
+            for v in range(1, len(self._wcnf) + 1):
+                if (i, v) not in index_map:
+                    index_count += 1
+                    index_map[i, v] = index_count
+                    index_map[i, -v] = -index_count
+        wcnf = WeightedCNFFormula(index_count)
+        # Add clauses
+        for i in range(1, terms):
+            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
+            clause in self._wcnf.formula.clauses]
+        condition_vars = [1, *(index_map[i, self._condition_var] for i in
+        range(1, terms))]
+        for c1, c2 in zip(condition_vars[:-1], condition_vars[1:]):
+            wcnf.formula.clauses.append([-c2, c1])
+        # Set weights
+        for i in range(1, index_count + 1):
+            wcnf.weights[i] = wcnf.weights[-i] = 1.0
+        for i, v in product(range(1, terms), range(1, len(self._wcnf) + 1)):
+            wcnf.weights[index_map[i, v]] *= self._wcnf.weights[v]
+            wcnf.weights[index_map[i, -v]] *= self._wcnf.weights[-v]
+        for i, c in enumerate(condition_vars[1:], 1):
+            wcnf.weights[c] = 1.0 / i
+        input_vars = [index_map[1, v] for v in self._input_vars]
+        output_vars = [index_map[terms - 1, v] for v in self._output_vars]
+        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
     @classmethod
     def kronecker(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
@@ -184,7 +234,7 @@ class WCNFMatrix:
         output_vars = [index_map[len(matrices) - 1, v] for v in
         matrices[-1]._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
-    
+
     @classmethod
     def identity(cls, n: int) -> "WCNFMatrix":
         """ Returns a representation of a 2^n x 2^n identity matrix """

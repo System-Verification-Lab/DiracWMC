@@ -95,6 +95,10 @@ class WCNFMatrix:
         """ Compute the matrix product of this matrix with another """
         return self.__class__.multiply(self, other)
 
+    def __add__(self, other: "WCNFMatrix") -> "WCNFMatrix":
+        """ Compute the sum of this matrix and another """
+        return self.__class__.linear_comb(self, other)
+
     @property
     def size(self) -> int:
         """ The total number of entries in the matrix, which is 2^(2n) """
@@ -237,6 +241,62 @@ class WCNFMatrix:
         input_vars = [index_map[0, v] for v in matrices[0]._input_vars]
         output_vars = [index_map[len(matrices) - 1, v] for v in
         matrices[-1]._output_vars]
+        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
+
+    @classmethod
+    def linear_comb(cls, *matrices: "tuple[float, WCNFMatrix] | WCNFMatrix"
+    ) -> "WCNFMatrix":
+        """ Get the representation of a linear combination of matrices. Each
+            matrix can be given as a tuple (factor, matrix) or just the matrix
+            itself, meaning factor = 1 """
+        matrices = tuple(m if isinstance(m, tuple) else (1.0, m) for m in
+        matrices)
+        assert len(matrices) > 0
+        assert all(m.dimension == matrices[0][1].dimension for _, m in matrices)
+        index_map = {}
+        index_count = 1
+        for i in range(len(matrices) - 1):
+            mat, next_mat = matrices[i][1], matrices[i + 1][1]
+            for ov, iv in zip(mat._output_vars, next_mat._input_vars):
+                if (i, ov) not in index_map:
+                    index_count += 1
+                    index_map[i, ov] = index_count
+                    index_map[i, -ov] = -index_count
+                index_map[i + 1, iv] = index_map[i, ov]
+                index_map[i + 1, -iv] = index_map[i, -ov]
+        for i, (_, mat) in enumerate(matrices):
+            for v in range(1, len(mat._wcnf) + 1):
+                if (i, v) in index_map:
+                    continue
+                index_count += 1
+                index_map[i, v] = index_count
+                index_map[i, -v] = -index_count
+        wcnf = WeightedCNFFormula(index_count)
+        # Weights
+        for v in range(1, index_count + 1):
+            wcnf.weights[v] = wcnf.weights[-v] = 1.0
+        for i, (_, mat) in enumerate(matrices):
+            for v in range(1, len(mat._wcnf) + 1):
+                wcnf.weights[index_map[i, v]] *= mat._wcnf.weights[v]
+                wcnf.weights[index_map[i, -v]] *= mat._wcnf.weights[-v]
+        for i, (factor, mat) in enumerate(matrices):
+            wcnf.weights[index_map[i, mat._condition_var]] = factor
+        # Clauses
+        for i, (_, mat) in enumerate(matrices):
+            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
+            clause in mat._wcnf.formula.clauses]
+        for i, (_, mati) in enumerate(matrices):
+            for j, (_, matj) in enumerate(matrices[i + 1:], i + 1):
+                wcnf.formula.clauses.append([-1, index_map[i,
+                -mati._condition_var], index_map[j, -matj._condition_var]])
+        wcnf.formula.clauses.append([-1, *(index_map[i, mat._condition_var] for
+        i, (_,  mat) in enumerate(matrices))])
+        for i, (_, mat) in enumerate(matrices):
+            wcnf.formula.clauses.append([1, -index_map[i, mat._condition_var]])
+        input_vars = [index_map[0, v] for v in matrices[0][1]._input_vars]
+        output_vars = [index_map[len(matrices) - 1, v] for v in
+        matrices[-1][1]._output_vars]
+        print(wcnf)
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
     @classmethod

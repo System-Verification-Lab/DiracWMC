@@ -138,10 +138,11 @@ class WCNFMatrix:
                 index_map[i + 1, -iv] = index_map[i, -ov]
         for i in range(1, terms):
             for v in range(1, len(self._wcnf) + 1):
-                if (i, v) not in index_map:
-                    index_count += 1
-                    index_map[i, v] = index_count
-                    index_map[i, -v] = -index_count
+                if (i, v) in index_map:
+                    continue
+                index_count += 1
+                index_map[i, v] = index_count
+                index_map[i, -v] = -index_count
         wcnf = WeightedCNFFormula(index_count)
         # Add clauses
         for i in range(1, terms):
@@ -208,9 +209,12 @@ class WCNFMatrix:
             mat = matrices[i]
             next_mat = matrices[i + 1]
             for ov, iv in zip(mat._output_vars, next_mat._input_vars):
-                index_count += 1
-                index_map[i + 1, iv] = index_map[i, ov] = index_count
-                index_map[i + 1, -iv] = index_map[i, -ov] = -index_count
+                if (i, ov) not in index_map:
+                    index_count += 1
+                    index_map[i, ov] = index_count
+                    index_map[i, -ov] = -index_count
+                index_map[i + 1, iv] = index_map[i, ov]
+                index_map[i + 1, -iv] = index_map[i, -ov]
         for i, mat in enumerate(matrices):
             for v in range(1, len(mat._wcnf) + 1):
                 if (i, v) in index_map:

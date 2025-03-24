@@ -39,14 +39,41 @@ class WCNFMatrix:
             entries of the matrix are displayed. Otherwise only the class name
             is returned """
         if self.dimension <= 4:
-            return ("[\n" + "\n".join("    [" + ", ".join(str(self[i, j]) for j
-            in range(self.dimension)) + "]," for i in range(self.dimension)) +
-            "\n]")
-        return f"<{self.__class__.__name__}>"
+            out = "["
+            length = max(max(len(str(self[i, j])) for j in
+            range(self.dimension)) for i in range(self.dimension))
+            for i in range(self.dimension):
+                if i > 0:
+                    out += "\n "
+                for j in range(self.dimension):
+                    out += str(self[i, j]).rjust(length + 2)
+            out += "  ]"
+            return out
+        out = "["
+        length = max(max(len(str(self[i, j])) for j in (0, 1, -1, -2)) for i in
+        (0, 1, -1, -2))
+        length = max(length, 3)
+        for i in (0, 1, 2, -1, -2):
+            if i != 0:
+                out += "\n "
+            if i == 2:
+                row = ["...", "...", "", "...", "..."]
+            else:
+                row = [(str(self[i, j]) if j != 2 else "...") for j in (0, 1, 2,
+                -1, -2)]
+            for s in row:
+                out += s.rjust(length + 2)
+        out += " ]"
+        return out
 
     def __getitem__(self, index: tuple[int, int]) -> float:
         """ Get a specific item in the matrix, given its coodinates. Tuple given
-            should have the form (row, column) """
+            should have the form (row, column). Negative indices are allowed, to
+            select a row/column from the end """
+        if index[0] < 0:
+            index = (index[0] + self.dimension, index[1])
+        if index[1] < 0:
+            index = (index[0], index[1] + self.dimension)
         wcnf = self._wcnf.copy()
         wcnf.formula.clauses.append([self._condition_var])
         for i, v in enumerate(self._output_vars):

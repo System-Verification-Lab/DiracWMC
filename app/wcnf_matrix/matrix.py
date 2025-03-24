@@ -24,6 +24,8 @@ class WCNFMatrix:
         assert (condition_var not in input_vars and condition_var not in
         output_vars)
         assert 0 < condition_var <= len(wcnf)
+        assert (wcnf.weights[condition_var] == wcnf.weights[-condition_var] ==
+        1.0)
         assert len(input_vars) == len(output_vars)
 
     def __repr__(self) -> str:
@@ -65,8 +67,18 @@ class WCNFMatrix:
         """ Compute the matrix product of this matrix with another """
         return self.__class__.multiply(self, other)
 
+    @property
+    def size(self) -> int:
+        """ The total number of entries in the matrix, which is 2^(2n) """
+        return 1 << (2 * len(self._input_vars))
+
+    @property
+    def dimension(self) -> int:
+        """ The dimension of the matrix, which is 2^n """
+        return 1 << len(self._input_vars)
+
     @classmethod
-    def kronecker(self, *matrices: "WCNFMatrix") -> "WCNFMatrix":
+    def kronecker(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
         """ Compute the kronecker product matrix of one or more other matrices
             """
         assert len(matrices) > 0
@@ -95,7 +107,7 @@ class WCNFMatrix:
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
     
     @classmethod
-    def multiply(self, *matrices: "WCNFMatrix") -> "WCNFMatrix":
+    def multiply(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
         """ Compute the matrix product of one or more matrices with the same
             dimensions """
         assert len(matrices) > 0
@@ -136,17 +148,32 @@ class WCNFMatrix:
         output_vars = [index_map[len(matrices) - 1, v] for v in
         matrices[-1]._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
-
-    @property
-    def size(self) -> int:
-        """ The total number of entries in the matrix, which is 2^(2n) """
-        return 1 << (2 * len(self._input_vars))
-
-    @property
-    def dimension(self) -> int:
-        """ The dimension of the matrix, which is 2^n """
-        return 1 << len(self._input_vars)
     
+    @classmethod
+    def identity(cls, n: int) -> "WCNFMatrix":
+        """ Returns a representation of a 2^n x 2^n identity matrix """
+        return WCNFMatrix(WeightedCNFFormula(n + 1,
+            formula=CNFFormula(n + 1, clauses=[]),
+            weights=VariableWeights(n + 1, weights={
+                **{v: 1.0 for v in range(1, n + 2)},
+                **{-v: 1.0 for v in range(1, n + 2)},
+            })
+        ), list(range(1, n + 1)), list(range(1, n + 1)), n + 1)
+    
+    @classmethod
+    def zero(cls, n: int) -> "WCNFMatrix":
+        """ Returns a representation of a 2^n x 2^n zero matrix """
+        return WCNFMatrix(WeightedCNFFormula(n + 2,
+            formula=CNFFormula(n + 2, clauses=[[-(n + 1), n + 2], [n + 1,
+            -(n + 2)]]),
+            weights=VariableWeights(n + 2, weights={
+                n + 2: 0.0,
+                -(n + 2): 1.0,
+                **{v: 1.0 for v in range(1, n + 2)},
+                **{-v: 1.0 for v in range(1, n + 2)},
+            })
+        ), list(range(1, n + 1)), list(range(1, n + 1)), n + 1)
+
 WCNFMatrix.PauliZ = WCNFMatrix(WeightedCNFFormula(3,
     formula=CNFFormula(3, clauses=[[-1, 2], [-1, 3], [1, -2, -3]]),
     weights=VariableWeights(3, weights={

@@ -178,7 +178,7 @@ class WCNFMatrix:
         output_vars = [index_map[terms - 1, v] for v in self._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
-    def identity_kronecker(self, m: int, i: int) -> "WCNFMatrix":
+    def local_matrix(self, m: int, i: int) -> "WCNFMatrix":
         """ Returns the matrix that is the kronecker product of I_(2^(i)), this
             matrix, and I_(2^(m-i-n)), where n is the number such that 2^n x 2^n
             are the dimensions of this matrix """

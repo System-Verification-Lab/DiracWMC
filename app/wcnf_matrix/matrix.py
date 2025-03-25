@@ -87,13 +87,23 @@ class WCNFMatrix:
         """ The total number of entries in the matrix, which is 2^(2n) """
         return self.size
 
-    def __pow__(self, other: "WCNFMatrix") -> "WCNFMatrix":
-        """ Compute the kronecker product of this matrix with another """
-        return self.__class__.kronecker(self, other)
+    def __pow__(self, other: "WCNFMatrix | int") -> "WCNFMatrix":
+        """ Compute the kronecker product of this matrix with another, or with
+            an integer """
+        if isinstance(other, WCNFMatrix):
+            return self.__class__.kronecker(self, other)
+        return self.__class__.multiply(*((self,) * other))
 
-    def __mul__(self, other: "WCNFMatrix") -> "WCNFMatrix":
-        """ Compute the matrix product of this matrix with another """
-        return self.__class__.multiply(self, other)
+    def __mul__(self, other: "WCNFMatrix | float") -> "WCNFMatrix":
+        """ Compute the matrix product of this matrix with another, or with a
+            constant """
+        if isinstance(other, WCNFMatrix):
+            return self.__class__.multiply(self, other)
+        return self.__class__.linear_comb((other, self))
+
+    def __rmul__(self, other: float) -> "WCNFMatrix":
+        """ Right multiplication with a constant """
+        return self.__class__.linear_comb((other, self))
 
     def __add__(self, other: "WCNFMatrix") -> "WCNFMatrix":
         """ Compute the sum of this matrix and another """
@@ -167,6 +177,16 @@ class WCNFMatrix:
         input_vars = [index_map[1, v] for v in self._input_vars]
         output_vars = [index_map[terms - 1, v] for v in self._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
+
+    def identity_kronecker(self, m: int, i: int) -> "WCNFMatrix":
+        """ Returns the matrix that is the kronecker product of I_(2^(i)), this
+            matrix, and I_(2^(m-i-n)), where n is the number such that 2^n x 2^n
+            are the dimensions of this matrix """
+        return self.__class__.kronecker(
+            self.__class__.identity(i),
+            self,
+            self.__class__.identity(m - i - self.n)
+        )
 
     @classmethod
     def kronecker(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
@@ -296,7 +316,6 @@ class WCNFMatrix:
         input_vars = [index_map[0, v] for v in matrices[0][1]._input_vars]
         output_vars = [index_map[len(matrices) - 1, v] for v in
         matrices[-1][1]._output_vars]
-        print(wcnf)
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
     @classmethod

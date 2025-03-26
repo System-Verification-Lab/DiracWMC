@@ -34,12 +34,13 @@ class Solver:
     """ Generic solver interface """
 
     def __init__(self, *, output_path: str = "output.cnf", timeout: float =
-    15.0):
+    15.0, show_log: bool = False):
         """ Constructor. An output file path can be given to output the produced
             .cnf file to. The timeout is in seconds and is a timeout of the
             entire process, so not just the solver runtime """
         self.output_path = output_path
         self.timeout = timeout
+        self.show_log = show_log
 
     @classmethod
     def from_solver_name(cls, solver_type: SolverType, *args, **kwargs) -> (
@@ -66,9 +67,11 @@ class DPMCSolver(Solver):
         """ Run the solver on the given weighted CNF formula and return an
             object with several statistics, including total weight and runtime
             """
-        log_info("Creating output file...")
+        if self.show_log:
+            log_info("Creating output file...")
         self._create_file(formula)
-        log_info("Running solver...")
+        if self.show_log:
+            log_info("Running solver...")
         return self._calculate_from_file()
 
     def _create_file(self, formula: WeightedCNFFormula):
@@ -96,7 +99,8 @@ class DPMCSolver(Solver):
         for line in result.split("\n"):
             if line.startswith("c s exact double prec-sci"):
                 weight = float(line.split()[-1])
-                log_stat("Solver output", weight)
+                if self.show_log:
+                    log_stat("Solver output", weight)
                 return SolverResult(True, end - start, weight)
         return SolverResult(False)
 
@@ -110,14 +114,16 @@ class CachetSolver(Solver):
         formula = formula.copy()
         formula.weights.add_missing()
         factor = formula.weights.normalize()
-        if factor in (float("inf"), float("-inf"), 0.0):
+        if self.show_log and factor in (float("inf"), float("-inf"), 0.0):
             log_warning(f"Cachet failed because normalization factor is "
             f"{factor}")
             return SolverResult(False)
-        log_stat("wCNF normalization factor", factor)
-        log_info("Creating output file...")
+        if self.show_log:
+            log_stat("wCNF normalization factor", factor)
+            log_info("Creating output file...")
         self._create_file(formula)
-        log_info("Running solver...")
+        if self.show_log:
+            log_info("Running solver...")
         result = self._calculate_from_file()
         if result.success:
             result.total_weight *= factor
@@ -145,7 +151,8 @@ class CachetSolver(Solver):
         for line in result.split("\n"):
             if line.startswith("Satisfying probability"):
                 weight = float(line.split()[-1])
-                log_stat("Solver output", weight)
+                if self.show_log:
+                    log_stat("Solver output", weight)
                 return SolverResult(True, end - start, weight)
         return SolverResult(False)
 
@@ -159,14 +166,16 @@ class TensorOrderSolver(Solver):
         formula = formula.copy()
         formula.weights.add_missing()
         factor = formula.weights.normalize()
-        if factor in (float("inf"), float("-inf"), 0.0):
+        if self.show_log and factor in (float("inf"), float("-inf"), 0.0):
             log_warning(f"TensorOrder failed because normalization factor is "
             f"{factor}")
             return SolverResult(False)
-        log_stat("wCNF normalization factor", factor)
-        log_info("Creating output file...")
+        if self.show_log:
+            log_stat("wCNF normalization factor", factor)
+            log_info("Creating output file...")
         self._create_file(formula)
-        log_info("Running solver...")
+        if self.show_log:
+            log_info("Running solver...")
         result = self._calculate_from_file()
         if result.success:
             result.total_weight *= factor
@@ -199,12 +208,14 @@ class TensorOrderSolver(Solver):
                 time_taken = float(line.split()[-1])
             if line.startswith("Count:"):
                 count = float(line.split()[-1])
-                log_stat("Solver output", count)
+                if self.show_log:
+                    log_stat("Solver output", count)
         if count is None:
             return SolverResult(False)
         if time_taken is None:
             time_taken = -1.0
-            log_warning("TensorOrder measured time not found")
+            if self.show_log:
+                log_warning("TensorOrder measured time not found")
         return SolverResult(True, time_taken, count)
     
 class GanakSolver(Solver):
@@ -216,9 +227,11 @@ class GanakSolver(Solver):
             """
         formula = formula.copy()
         formula.weights.add_missing()
-        log_info("Creating output file...")
+        if self.show_log:
+            log_info("Creating output file...")
         self._create_file(formula)
-        log_info("Running solver...")
+        if self.show_log:
+            log_info("Running solver...")
         result = self._calculate_from_file()
         return result
     
@@ -245,10 +258,12 @@ class GanakSolver(Solver):
                 time_taken = float(line.split()[-1])
             if line.startswith("c s exact arb"):
                 count = float(line.split()[-1])
-                log_stat("Solver output", count)
+                if self.show_log:
+                    log_stat("Solver output", count)
         if count is None:
             return SolverResult(False)
         if time_taken is None:
             time_taken = -1.0
-            log_warning("Ganak measured time not found")
+            if self.show_log:
+                log_warning("Ganak measured time not found")
         return SolverResult(True, time_taken, count)

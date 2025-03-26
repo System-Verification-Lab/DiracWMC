@@ -351,7 +351,7 @@ class WCNFMatrix:
                 if i != j and v == w:
                     raise ValueError(f"Invalid duplicate variable between "
                     f"input and output variables: {v}")
-        for v in self._output_vars:
+        for i, v in enumerate(self._output_vars):
             if not 0 < v <= len(self._wcnf):
                 raise ValueError(f"Invalid variable in output variables: {v}, "
                 f"valid range [1, {len(self._wcnf)}]")

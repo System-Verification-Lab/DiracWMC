@@ -21,6 +21,17 @@ class BoolVar:
             variable if it has one """
         return self._root()._name
 
+    def __eq__(self, other: "BoolVar") -> bool:
+        """ Checks if two boolean variables are semantically the same """
+        if isinstance(other, BoolVar):
+            return self._root() == other._root()
+        raise NotImplementedError
+
+    def __hash__(self) -> int:
+        """ Specialized hash function because two different objects are still
+            equal if they have the same root """
+        return hash(id(self._root()))
+
     def link(self, other: "BoolVar"):
         """ Make this and another boolean variable the semantically the same.
             The name of the new variable is the name of this boolean variable
@@ -31,12 +42,12 @@ class BoolVar:
 
     @property
     def name(self) -> str:
-        """ The name of the boolean variable """
+        """ The name of the boolean variable. Note that it is possible two have
+            two different variables with the same name. It is recommended to
+            avoid this """
         return self._root()._name
-    
     @name.setter
     def name(self, value: str):
-        """ The name of the boolean variable """
         self._root()._name = value
 
     def _root(self) -> "BoolVar":

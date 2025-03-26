@@ -20,14 +20,7 @@ class WCNFMatrix:
         self._input_vars = input_vars
         self._output_vars = output_vars
         self._condition_var = condition_var
-        assert all(0 < v <= len(wcnf) for v in input_vars)
-        assert all(0 < v <= len(wcnf) for v in output_vars)
-        assert (condition_var not in input_vars and condition_var not in
-        output_vars)
-        assert 0 < condition_var <= len(wcnf)
-        assert (wcnf.weights[condition_var] == wcnf.weights[-condition_var] ==
-        1.0)
-        assert len(input_vars) == len(output_vars)
+        self._check_valid()
 
     def __repr__(self) -> str:
         """ Canonical representation of the matrix """
@@ -342,6 +335,44 @@ class WCNFMatrix:
                 **{-v: 1.0 for v in range(1, n + 2)},
             })
         ), list(range(1, n + 1)), list(range(1, n + 1)), n + 1)
+
+    def _check_valid(self):
+        """ Check if the matrix representation is valid. If it is not, raise the
+            appropriate exception """
+        for i, v in enumerate(self._input_vars):
+            if not 0 < v <= len(self._wcnf):
+                raise ValueError(f"Invalid variable in input variables: {v}, "
+                f"valid range [1, {len(self._wcnf)}]")
+            for j, w in enumerate(self._input_vars):
+                if i != j and v == w:
+                    raise ValueError(f"Duplicate variable {v} in input "
+                    f"variables")
+            for j, w in enumerate(self._output_vars):
+                if i != j and v == w:
+                    raise ValueError(f"Invalid duplicate variable between "
+                    f"input and output variables: {v}")
+        for v in self._output_vars:
+            if not 0 < v <= len(self._wcnf):
+                raise ValueError(f"Invalid variable in output variables: {v}, "
+                f"valid range [1, {len(self._wcnf)}]")
+            for j, w in enumerate(self._output_vars):
+                if i != j and v == w:
+                    raise ValueError(f"Duplicate variable {v} in output "
+                    "variables")
+        if (self._condition_var in self._input_vars or self._condition_var in
+        self._output_vars):
+            raise ValueError("Condition variable may not appear in input and "
+            "output variabels")
+        if not 0 < self._condition_var <= len(self._wcnf):
+            raise ValueError(f"Invalid conditional variable "
+            f"{self._condition_var}")
+        if (self._wcnf.weights[self._condition_var] != 1.0 or
+        self._wcnf.weights[self._condition_var] != 1.0):
+            raise ValueError("Weight of conditional variable should be 1.0")
+        if len(self._input_vars) != len(self._output_vars):
+            raise ValueError(f"Input variable length not equal to output "
+            f"variable length: {len(self._input_vars)} != "
+            f"{len(self._output_vars)}")
 
 WCNFMatrix.PauliZ = WCNFMatrix(WeightedCNFFormula(3,
     formula=CNFFormula(3, clauses=[[-1, 2], [-1, 3], [1, -2, -3]]),

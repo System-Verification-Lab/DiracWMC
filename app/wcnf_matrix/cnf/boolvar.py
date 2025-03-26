@@ -24,8 +24,13 @@ class BoolVar:
     def __eq__(self, other: "BoolVar") -> bool:
         """ Checks if two boolean variables are semantically the same """
         if isinstance(other, BoolVar):
-            return self._root() == other._root()
+            return self._root() is other._root()
         raise NotImplementedError
+
+    def __lt__(self, other: "BoolVar") -> bool:
+        """ Ordering is used for sorting. Boolean variables are sorted by their
+            names """
+        return self.name < other.name
 
     def __hash__(self) -> int:
         """ Specialized hash function because two different objects are still

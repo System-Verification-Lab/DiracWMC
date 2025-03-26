@@ -25,7 +25,7 @@ class CNF:
         """ Check if two CNF formulae are the same. The order of clauses and
             terms within clauses does not matter, but other than this the
             clauses should be the same """
-        clauses = tuple(tuple(sorted(clause)) for clause in clauses)
+        clauses = tuple(tuple(sorted(clause)) for clause in self.clauses)
         other_clauses = tuple(tuple(sorted(clause)) for clause in other.clauses)
         return clauses == other_clauses
 

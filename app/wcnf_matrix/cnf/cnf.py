@@ -14,8 +14,8 @@ class CNF:
 
     def __str__(self) -> str:
         """ String representation of the CNF formula """
-        return "{" + " ".join("(" + " ".join(str(x) for x in clause) + ")" for
-        clause in self.clauses) + "}"
+        return "CNF(" + " ".join("(" + " ".join(str(x) for x in clause) + ")"
+        for clause in self.clauses) + ")"
 
     def __repr__(self) -> str:
         """ Canonical representation """

@@ -1,4 +1,6 @@
 
+from typing import Any
+
 name_index = 1
 
 class BoolVar:
@@ -7,68 +9,56 @@ class BoolVar:
     def __init__(self, name: str | None = None):
         """ Constructor, which makes a new unique boolean variable, optionally
             with the given name """
+        global name_index
         self._parent: BoolVar | None = None
-        self._tree_size = 1
-        if name is None:
-            self._name = f"v{name_index}"
-            name_index += 1
-        else:
-            self._name = name
+        self._index = name_index
+        name_index += 1
+        self.name = f"v{self._index}" if name is None else name
 
     def __str__(self) -> str:
-        """ String representation of the boolean variable keeps track of a
-            global index to give a unique name, or gives the name of the
-            variable if it has one """
-        return self._root()._name
+        """ String representation is the name of the variable """
+        return self.name
 
-    def __eq__(self, other: "BoolVar") -> bool:
-        """ Checks if two boolean variables are semantically the same """
-        if isinstance(other, BoolVar):
-            return self._root() is other._root()
-        raise NotImplementedError
+    def __repr__(self) -> str:
+        """ Canonical representation """
+        return f"{self.__class__.__name__}({self.name!r})"
 
-    def __lt__(self, other: "BoolVar") -> bool:
-        """ Ordering is used for sorting. Boolean variables are sorted by their
-            names """
-        return self.name < other.name
+    def __eq__(self, other: Any) -> bool:
+        """ Checks if two boolean variables are the same """
+        return self is other
 
-    def __hash__(self) -> int:
-        """ Specialized hash function because two different objects are still
-            equal if they have the same root """
-        return hash(id(self._root()))
+    def __ne__(self, other: Any) -> bool:
+        """ Checks if two boolean variables are not the same """
+        return self is not other
 
-    def link(self, other: "BoolVar"):
-        """ Make this and another boolean variable the semantically the same.
-            The name of the new variable is the name of this boolean variable
-            instance. If the other instance has a name, it is discarded """
-        name = self.name
-        self.__class__._combine(self, other)
-        self.name = name
+    def __lt__(self, other: Any) -> bool:
+        """ Compare two boolean variables. Used for sorting variables by the
+            time they were initialized """
+        if not isinstance(other, BoolVar):
+            raise NotImplementedError
+        return self._index < other._index
 
-    @property
-    def name(self) -> str:
-        """ The name of the boolean variable. Note that it is possible two have
-            two different variables with the same name. It is recommended to
-            avoid this """
-        return self._root()._name
-    @name.setter
-    def name(self, value: str):
-        self._root()._name = value
-
-    def _root(self) -> "BoolVar":
-        """ Get the root node in the DSU of this boolean variable """
-        if self._parent is None:
-            return self
-        self._parent = self._parent._root()
-        return self._parent
+    def __le__(self, other: "BoolVar") -> bool:
+        """ Compare two boolean variables. Used for sorting variables by the
+            time they were initialized """
+        if not isinstance(other, BoolVar):
+            raise NotImplementedError
+        return self._index <= other._index
     
-    @classmethod
-    def _combine(cls, x: "BoolVar", y: "BoolVar"):
-        """ Combine the DSU trees of two boolean variables """
-        x, y = x._root(), y._root()
-        if x is y:
-            return
-        if x._tree_size < y._tree_size:
-            x, y = y, x
-        y._parent = x
-        x._tree_size += y._tree_size
+    def __gt__(self, other: "BoolVar") -> bool:
+        """ Compare two boolean variables. Used for sorting variables by the
+            time they were initialized """
+        if not isinstance(other, BoolVar):
+            raise NotImplementedError
+        return self._index > other._index
+    
+    def __ge__(self, other: "BoolVar") -> bool:
+        """ Compare two boolean variables. Used for sorting variables by the
+            time they were initialized """
+        if not isinstance(other, BoolVar):
+            raise NotImplementedError
+        return self._index >= other._index
+    
+    def __hash__(self) -> int:
+        """ The hash of a boolean variable is the ID of the object """
+        return id(self)

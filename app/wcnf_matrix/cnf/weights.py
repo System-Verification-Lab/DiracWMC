@@ -2,6 +2,7 @@
 from typing import Iterable, Iterator, Mapping, Callable
 from itertools import chain
 from .boolvar import BoolVar
+from .cnf import CNF
 
 class WeightFunction:
     """ A weight function mapping boolean variables to positive and negative
@@ -166,6 +167,12 @@ class WeightFunction:
             else:
                 result.set_weight(var, value, func(weight, cur_weight))
         return result
+
+    def model_count(self, cnf: CNF):
+        """ The weighted model count of the given formula with respect to this
+            weight function. Calculated using brute force """
+        # TODO
+        ...
 
     @property
     def domain(self) -> set[BoolVar]:

@@ -12,3 +12,7 @@
 - [ ] Python library matrix representation
 - [ ] Higher-order trotter formulae
 - [ ] Quantum Potts
+
+- [ ] Vector potts
+- [ ] Lower temperature paper
+- [ ] q-state quantum case

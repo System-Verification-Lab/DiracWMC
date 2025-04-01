@@ -33,6 +33,11 @@ class CNF:
         other_clauses = tuple(tuple(sorted(clause)) for clause in other.clauses)
         return clauses == other_clauses
 
+    def __call__(self, values: Mapping[BoolVar, bool]) -> bool:
+        """ Check if this CNF formula evaluates to true given the variable
+            assignments """
+        return self.truth_value(values)
+
     def subst(self, find: BoolVar, replace: BoolVar):
         """ Substitue all occurrences of the given variable in the CNF formula
             with another variable """
@@ -51,5 +56,7 @@ class CNF:
         return CNF(self.clauses)
     
     def truth_value(self, values: Mapping[BoolVar, bool]) -> bool:
-        # TODO
-        ...
+        """ Check if this CNF formula evaluates to true given the variable
+            assignments """
+        return all(any(var.value == values[var.var] for var in clause) for
+        clause in self.clauses)

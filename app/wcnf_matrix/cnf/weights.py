@@ -1,6 +1,7 @@
 
 from typing import Iterable, Iterator, Mapping, Callable
-from itertools import chain
+from itertools import chain, product
+from functools import reduce
 from .boolvar import BoolVar
 from .cnf import CNF
 
@@ -70,6 +71,11 @@ class WeightFunction:
         """ Convert all weights to their absolute value and return the resulting
             weight function """
         return self.apply(abs)
+
+    def __call__(self, cnf: CNF) -> float:
+        """ The weighted model count of the given formula with respect to this
+            weight function. Calculated using brute force """
+        return self.model_count(cnf)
 
     def subst(self, find: BoolVar, replace: BoolVar):
         """ Substitute the given variable in the domain with another variable.
@@ -168,13 +174,25 @@ class WeightFunction:
                 result.set_weight(var, value, func(weight, cur_weight))
         return result
 
-    def model_count(self, cnf: CNF):
+    def model_count(self, cnf: CNF) -> float:
         """ The weighted model count of the given formula with respect to this
             weight function. Calculated using brute force """
-        # TODO
-        ...
+        return sum(self._mapping_weight(mapping) for mapping in
+        self._var_mappings() if cnf(mapping))
 
     @property
     def domain(self) -> set[BoolVar]:
         """ The domain of the weight function as a tuple of variables """
         return self._domain
+    
+    def _var_mappings(self) -> Iterator[Mapping[BoolVar, bool]]:
+        """ Get an iterator over all possible variable assignment mappings given
+            the domain of the weight function """
+        var_list = tuple(self.domain)
+        for assignment in product((False, True), repeat=len(var_list)):
+            yield {var: value for var, value in zip(var_list, assignment)}
+
+    def _mapping_weight(self, mapping: Mapping[BoolVar, bool]) -> float:
+        """ Get the weight of the given variable assignment mapping """
+        return reduce(lambda x, y: x * y, (self.get_weight(var, mapping[var])
+        for var in self.domain), 1.0)

@@ -85,14 +85,24 @@ class WeightFunction:
             return
         if replace in self._domain:
             raise ValueError(f"Variable {replace} is already in domain")
+        self._domain.remove(find)
+        self._domain.add(replace)
         self._weights[replace] = self._weights[find]
         self._weights.pop(find)
 
-    def bulk_subst(self, var_map: dict[BoolVar, BoolVar]):
+    def bulk_subst(self, var_map: Mapping[BoolVar, BoolVar]):
         """ Bulk substitute variables. This also allows for substitutions like
             {x: y, y: x}. If the substitution results in multiple of the same
             variable in the domain, or if the variables to substitute are not in
             the domain, an error is thrown """
+        var_map = dict(var_map)
+        for var in tuple(var_map.keys()):
+            if var not in self._domain:
+                var_map.pop(var)
+        for var in var_map.keys():
+            self._domain.remove(var)
+        for var in var_map.values():
+            self._domain.add(var)
         new_weights: dict[BoolVar, tuple[float | None, float | None]] = {}
         for find, replace in var_map.items():
             if replace in new_weights:

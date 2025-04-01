@@ -15,7 +15,7 @@ class SignedBoolVar:
     def __str__(self) -> str:
         """ String representation is the name of the variable, with a "-" in
             front if it is negated """
-        return f"{self._var}" if self._value else str(self._var)
+        return str(self._var) if self._value else "-" + str(self._var)
 
     def __repr__(self) -> str:
         """ Canonical representation """

@@ -7,7 +7,9 @@ from .cnf import CNF
 
 class WeightFunction:
     """ A weight function mapping boolean variables to positive and negative
-        weights """
+        weights. Weight functions can be combined for example by multiplying
+        values on the overlap of the domains. Values of weights can be
+        retrieved/changed by using wweight_func[var, True/False] """
     
     def __init__(self, domain: Iterable[BoolVar], *, weights: Mapping[BoolVar,
     tuple[float | None, float | None]] | None = None):
@@ -17,14 +19,18 @@ class WeightFunction:
         for var in domain:
             self._weights.setdefault(var, (None, None))
         self._domain = set(domain)
-        for var in self._weights:
-            if var not in self._domain:
-                raise ValueError(f"Variable {var} not in domain")
+        if any(var not in self._domain for var in self._weights):
+            raise ValueError(f"Variable {var} not in domain")
 
     def __str__(self) -> str:
         """ String representation of the weight function """
         return ("WeightFunction(" + ", ".join(f"{var} => {value}" for var, value
         in self._weights.items()) + ")")
+
+    def __repr__(self) -> str:
+        """ Canonical representation """
+        return (f"{self.__class__.__name__}({self._domain!r}, weights="
+        f"{self._weights!r})")
 
     def __getitem__(self, item: tuple[BoolVar, bool]) -> float | None:
         """ Get the weight of the given variable with the given value """
@@ -66,7 +72,17 @@ class WeightFunction:
             where they do not overlap or one of the values is None, the values
             from one of the weight functions is chosen. """
         return self.combine(other, lambda x, y: x / y)
+
+    def __eq__(self, other: "WeightFunction") -> bool:
+        """ Check if two weight functions are equal, i.e., their domains and all
+            of their values are equal """
+        return self.compare(other, lambda x, y: x == y)
     
+    def __ne__(self, other: "WeightFunction") -> bool:
+        """ Check if two weight functions are unequal, either because they have
+            different domains or because their values differ """
+        return not (self == other)
+
     def __abs__(self) -> "WeightFunction":
         """ Convert all weights to their absolute value and return the resulting
             weight function """
@@ -76,6 +92,21 @@ class WeightFunction:
         """ The weighted model count of the given formula with respect to this
             weight function. Calculated using brute force """
         return self.model_count(cnf)
+
+    def compare(self, other: "WeightFunction", func: Callable[[float | None,
+    float | None], bool], *, same_domain: bool = False) -> bool:
+        """ Compare two weight functions given a compare function. If the
+            function returns True on all variable/value pairs that are in the
+            domains of both functions. Optionally it can be required that both
+            weight functions have the same domain """
+        if same_domain and self.domain != other.domain:
+            return False
+        return all(func(self[var, val], other[var, val]) for var, val in
+        product(self.overlap(other), (True, False)))
+
+    def overlap(self, other: "WeightFunction") -> Iterator[BoolVar]:
+        """ Get the overlap of domains of two weight functions """
+        yield from filter(lambda var: var in other.domain, self.domain)
 
     def subst(self, find: BoolVar, replace: BoolVar):
         """ Substitute the given variable in the domain with another variable.
@@ -109,8 +140,12 @@ class WeightFunction:
                 raise ValueError(f"Variable {replace} is defined twice in "
                 "mapping")
             new_weights[replace] = self._weights[find]
-            if replace in var_map:
+            if replace in self._domain and replace not in var_map:
                 raise ValueError(f"Variable {replace} is already in domain")
+        replaces = set(var_map.values())
+        for name in var_map.keys():
+            if name not in replaces:
+                self._weights.pop(name)
         for var, value in new_weights.items():
             self._weights[var] = value
 
@@ -194,7 +229,7 @@ class WeightFunction:
     def domain(self) -> set[BoolVar]:
         """ The domain of the weight function as a tuple of variables """
         return self._domain
-    
+
     def _var_mappings(self) -> Iterator[Mapping[BoolVar, bool]]:
         """ Get an iterator over all possible variable assignment mappings given
             the domain of the weight function """

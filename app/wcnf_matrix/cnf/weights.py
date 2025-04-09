@@ -127,27 +127,23 @@ class WeightFunction:
             variable in the domain, or if the variables to substitute are not in
             the domain, an error is thrown """
         var_map = dict(var_map)
-        for var in tuple(var_map.keys()):
-            if var not in self._domain:
-                var_map.pop(var)
+        # Determine resulting domain and check if there are not duplicates
         for var in var_map.keys():
-            self._domain.remove(var)
+            self.domain.remove(var)
         for var in var_map.values():
-            self._domain.add(var)
-        new_weights: dict[BoolVar, tuple[float | None, float | None]] = {}
-        for find, replace in var_map.items():
-            if replace in new_weights:
-                raise ValueError(f"Variable {replace} is defined twice in "
-                "mapping")
-            new_weights[replace] = self._weights[find]
-            if replace in self._domain and replace not in var_map:
-                raise ValueError(f"Variable {replace} is already in domain")
-        replaces = set(var_map.values())
-        for name in var_map.keys():
-            if name not in replaces:
-                self._weights.pop(name)
-        for var, value in new_weights.items():
-            self._weights[var] = value
+            if var in self.domain:
+                raise ValueError(f"Duplicate variable {var} after substitution")
+            self.domain.add(var)
+        # Add new values to separate dict
+        new_values: dict[BoolVar, tuple[float | None, float | None]] = {}
+        for src, dst in var_map.items():
+            new_values[dst] = self._weights[src]
+        # Remove keys because they are changed
+        for var in var_map.keys():
+            self._weights.pop(var)
+        # Add separate dict to existing
+        for var, val in new_values.items():
+            self._weights[var] = val
 
     def copy(self) -> "WeightFunction":
         """ Copy this weight function. Keep in mind that the variables
@@ -211,6 +207,7 @@ class WeightFunction:
             assigns None. If one of them does assign None, the weight is taken
             from the other weight function """
         result = WeightFunction(self.domain.union(other.domain))
+        print(list(self.items()), list(other.items()))
         for var, value, weight in chain(self.items(), other.items()):
             cur_weight = result.get_weight(var, value)
             if cur_weight is None:

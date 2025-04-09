@@ -23,10 +23,10 @@ def test_bulk_subst_domain():
     assert f.domain == set([y, z])
 
 def test_bulk_subst_values():
-    x, y, z = BoolVar(), BoolVar(), BoolVar()
+    x, y, z = BoolVar("x"), BoolVar("y"), BoolVar("z")
     f = WeightFunction([x, y])
     f[x, True] = 98.0
-    f[z, False] = -1.5
+    f[y, False] = -1.5
     f.bulk_subst({x: y, y: z})
     assert f[y, True] == 98.0
     assert f[z, False] == -1.5
@@ -38,5 +38,5 @@ def test_bulk_subst_and_combine():
     g = WeightFunction([z])
     g[z, True] = 2.0
     g.bulk_subst({z: y})
-    f.combine(g, lambda a, b: a * b)
-    assert f[y, True] == approx(10.0)
+    h = f.combine(g, lambda a, b: a * b)
+    assert h[y, True] == approx(10.0)

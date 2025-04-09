@@ -260,10 +260,6 @@ class WCNFMatrix:
         assert len(matrices) > 0
         assert all(mat.n == matrices[0].n for mat in matrices)
         matrices = [matrix.copy() for matrix in reversed(matrices)]
-        print(matrices[0]._cnf)
-        print(matrices[0]._weight_func)
-        print(matrices[1]._cnf)
-        print(matrices[1]._weight_func)
         for mat_a, mat_b in zip(matrices, matrices[1:]):
             mat_b.bulk_subst({i: o for i, o in zip(mat_b._input_vars,
             mat_a._output_vars)})

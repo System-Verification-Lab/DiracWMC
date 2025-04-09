@@ -207,7 +207,6 @@ class WeightFunction:
             assigns None. If one of them does assign None, the weight is taken
             from the other weight function """
         result = WeightFunction(self.domain.union(other.domain))
-        print(list(self.items()), list(other.items()))
         for var, value, weight in chain(self.items(), other.items()):
             cur_weight = result.get_weight(var, value)
             if cur_weight is None:

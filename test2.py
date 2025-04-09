@@ -17,4 +17,4 @@ from app.wcnf_matrix.new_matrix import WCNFMatrix
 print(WCNFMatrix.PauliZ)
 print(WCNFMatrix.PauliZ._cnf)
 print(WCNFMatrix.PauliZ._weight_func)
-print(WCNFMatrix.PauliZ * WCNFMatrix.PauliZ)
+print(WCNFMatrix.PauliX ** WCNFMatrix.PauliZ)

@@ -12,9 +12,9 @@ from app.wcnf_matrix.cnf.weights import WeightFunction
 # cnf.subst(x, y)
 # print(wf(cnf))
 
-from app.wcnf_matrix.new_matrix import WCNFMatrix
+from app.wcnf_matrix.matrix import WCNFMatrix
 
 print(WCNFMatrix.PauliZ)
 print(WCNFMatrix.PauliZ._cnf)
 print(WCNFMatrix.PauliZ._weight_func)
-print(WCNFMatrix.PauliX ** WCNFMatrix.PauliZ)
+print(WCNFMatrix.PauliX ** WCNFMatrix.PauliZ * WCNFMatrix.PauliX ** WCNFMatrix.PauliZ)

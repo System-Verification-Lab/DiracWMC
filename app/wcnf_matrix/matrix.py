@@ -1,116 +1,39 @@
 
 from itertools import product
-from typing import Iterable
+from functools import reduce
+from typing import Iterable, Iterator, Mapping, Self
+from .cnf import CNF, WeightFunction, BoolVar
 from ..wcnf import WeightedCNFFormula, CNFFormula, VariableWeights
+from .abstract_matrix import AbstractMatrix
 
-class WCNFMatrix:
+class WCNFMatrix(AbstractMatrix[float]):
     """ A weighted CNF representation of a 2^n x 2^n matrix, which may be an
         efficient way of representing this matrix in some specific cases """
 
     PauliX: "WCNFMatrix"
     PauliZ: "WCNFMatrix"
 
-    def __init__(self, wcnf: WeightedCNFFormula, input_vars: Iterable[int],
-    output_vars: Iterable[int], condition_var: int):
-        """ Constructor, given the weighed CNF formula, the input and output
-            variables, and the conditional variable index """
-        input_vars = list(input_vars)
-        output_vars = list(output_vars)
-        self._wcnf = wcnf
-        self._input_vars = input_vars
-        self._output_vars = output_vars
+    def __init__(self, cnf: CNF, weight_func: WeightFunction, input_vars:
+    Iterable[BoolVar], output_vars: Iterable[BoolVar], condition_var: BoolVar):
+        """ Constructor, given the CNF formula, weight function, the input and
+            output variables, and the conditional variable index """
+        self._cnf = cnf
+        self._weight_func = weight_func
+        self._input_vars = list(input_vars)
+        self._output_vars = list(output_vars)
         self._condition_var = condition_var
         self._check_valid()
 
     def __repr__(self) -> str:
         """ Canonical representation of the matrix """
-        return (f"{self.__class__.__name__}({self._wcnf!r}, "
-        f"{self._input_vars!r}, {self._output_vars!r}, "
+        return (f"{self.__class__.__name__}({self._cnf!r}, "
+        f"{self._weight_func!r}, {self._input_vars!r}, {self._output_vars!r}, "
         f"{self._condition_var!r})")
-    
-    def __str__(self) -> str:
-        """ String representation of the matrix. For small matrices all of the
-            entries of the matrix are displayed. Otherwise only the class name
-            is returned """
-        if self.dimension <= 4:
-            out = "["
-            length = max(max(len(str(self[i, j])) for j in
-            range(self.dimension)) for i in range(self.dimension))
-            for i in range(self.dimension):
-                if i > 0:
-                    out += "\n "
-                for j in range(self.dimension):
-                    out += str(self[i, j]).rjust(length + 2)
-            out += "  ]"
-            return out
-        out = "["
-        length = max(max(len(str(self[i, j])) for j in (0, 1, -1, -2)) for i in
-        (0, 1, -1, -2))
-        length = max(length, 3)
-        for i in (0, 1, 2, -1, -2):
-            if i != 0:
-                out += "\n "
-            if i == 2:
-                row = ["...", "...", "", "...", "..."]
-            else:
-                row = [(str(self[i, j]) if j != 2 else "...") for j in (0, 1, 2,
-                -1, -2)]
-            for s in row:
-                out += s.rjust(length + 2)
-        out += " ]"
-        return out
-
-    def __getitem__(self, index: tuple[int, int]) -> float:
-        """ Get a specific item in the matrix, given its coodinates. Tuple given
-            should have the form (row, column). Negative indices are allowed, to
-            select a row/column from the end """
-        if index[0] < 0:
-            index = (index[0] + self.dimension, index[1])
-        if index[1] < 0:
-            index = (index[0], index[1] + self.dimension)
-        wcnf = self._wcnf.copy()
-        wcnf.formula.clauses.append([self._condition_var])
-        for i, v in enumerate(self._output_vars):
-            wcnf.formula.clauses.append([v if (index[0] >> i) & 1 else -v])
-        for i, v in enumerate(self._input_vars):
-            wcnf.formula.clauses.append([v if (index[1] >> i) & 1 else -v])
-        return wcnf.total_weight()
-
-    def __len__(self) -> int:
-        """ The total number of entries in the matrix, which is 2^(2n) """
-        return self.size
-
-    def __pow__(self, other: "WCNFMatrix | int") -> "WCNFMatrix":
-        """ Compute the kronecker product of this matrix with another, or with
-            an integer """
-        if isinstance(other, WCNFMatrix):
-            return self.__class__.kronecker(self, other)
-        return self.__class__.multiply(*((self,) * other))
-
-    def __mul__(self, other: "WCNFMatrix | float") -> "WCNFMatrix":
-        """ Compute the matrix product of this matrix with another, or with a
-            constant """
-        if isinstance(other, WCNFMatrix):
-            return self.__class__.multiply(self, other)
-        return self.__class__.linear_comb((other, self))
-
-    def __rmul__(self, other: float) -> "WCNFMatrix":
-        """ Right multiplication with a constant """
-        return self.__class__.linear_comb((other, self))
-
-    def __add__(self, other: "WCNFMatrix") -> "WCNFMatrix":
-        """ Compute the sum of this matrix and another """
-        return self.__class__.linear_comb(self, other)
 
     @property
-    def size(self) -> int:
-        """ The total number of entries in the matrix, which is 2^(2n) """
-        return 1 << (2 * self.n)
-
-    @property
-    def dimension(self) -> int:
-        """ The dimension of the matrix, which is 2^n """
-        return 1 << self.n
+    def shape(self) -> tuple[int, int]:
+        """ A tuple with the number of rows and columns respectively """
+        return 1 << self.n, 1 << self.n
 
     @property
     def n(self) -> int:
@@ -118,14 +41,74 @@ class WCNFMatrix:
             2^n x 2^n matrix """
         return len(self._input_vars)
 
+    @property
+    def domain(self) -> set[BoolVar]:
+        """ Get an iterable over the domain of variables of the weight function
+            of this matrix representation """
+        return self._weight_func.domain
+
+    def get_entry(self, row: int, col: int) -> float:
+        """ Get an entry in the matrix given the row and column """
+        cnf = self._cnf.copy()
+        for i, v in enumerate(self._output_vars):
+            cnf.add_clause([+v if (row >> i) & 1 else -v])
+        for i, v in enumerate(self._input_vars):
+            cnf.add_clause([+v if (col >> i) & 1 else -v])
+        cnf.add_clause([self._condition_var])
+        return self._weight_func(cnf)
+
+    def set_entry(self, row: int, col: int, value: float):
+        raise NotImplementedError(f"Cannot set entries of matrix class "
+        f"{self.__class__.__name__}")
+
+    def scalar_product(self, factor: float) -> Self:
+        """ Get the scalar product of this matrix with some factor """
+        return self.__class__.linear_comb((factor, self))
+
+    def copy(self) -> "WCNFMatrix":
+        """ Make a copy of this WCNF matrix, which uses newly initialized
+            variabels """
+        matrix = WCNFMatrix(self._cnf.copy(), self._weight_func.copy(), self._input_vars,
+        self._output_vars, self._condition_var)
+        matrix.replace_vars()
+        return matrix
+
+    def replace_vars(self):
+        """ Replace all variables in this WCNF matrix object with newly
+            initialized ones """
+        mapping = {var: BoolVar() for var in self.domain}
+        self._cnf.bulk_subst(mapping)
+        self._weight_func.bulk_subst(mapping)
+        self._input_vars = [mapping[var] for var in self._input_vars]
+        self._output_vars = [mapping[var] for var in self._output_vars]
+        self._condition_var = mapping[self._condition_var]
+
+    def subst(self, find: BoolVar, replace: BoolVar):
+        """ Substitute the given variable in the representation with another """
+        if find == replace:
+            return
+        self.bulk_subst({find: replace})
+
+    def bulk_subst(self, var_map: Mapping[BoolVar, BoolVar]):
+        """ Bulk substitute variables. This also allows for substitutions like
+            {x: y, y: x} """
+        self._input_vars = [var_map.get(var, var) for var in self._input_vars]
+        self._output_vars = [var_map.get(var, var) for var in self._output_vars]
+        self._condition_var = var_map.get(self._condition_var,
+        self._condition_var)
+        self._cnf.bulk_subst(var_map)
+        self._weight_func.bulk_subst(var_map)
+        self._check_valid()
+
     def trace(self) -> "WeightedCNFFormula":
         """ Get a weighted CNF formula such that the total weight of the formula
             is equal to the trace of the matrix """
-        wcnf = self._wcnf.copy()
-        wcnf.formula.clauses.append([self._condition_var])
+        cnf = self._cnf.copy()
+        cnf.add_clause([self._condition_var])
         for x, y in zip(self._input_vars, self._output_vars):
-            wcnf.formula.clauses += [[x, -y], [-x, y]]
-        return wcnf
+            if x is not y:
+                cnf.add_clause([x, -y], [-x, y])
+        return self._weight_func(cnf)
 
     def exp(self, terms: int) -> "WCNFMatrix":
         """ Get the representation of the matrix sum(k=0..terms-1) matrix^k/k!,
@@ -171,20 +154,43 @@ class WCNFMatrix:
         output_vars = [index_map[terms - 1, v] for v in self._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
-    def local_matrix(self, m: int, i: int) -> "WCNFMatrix":
-        """ Returns the matrix that is the kronecker product of I_(2^(i)), this
-            matrix, and I_(2^(m-i-n)), where n is the number such that 2^n x 2^n
-            are the dimensions of this matrix """
-        return self.__class__.kronecker(
-            self.__class__.identity(i),
-            self,
-            self.__class__.identity(m - i - self.n)
+    @classmethod
+    def product(cls, *matrices: Self) -> Self:
+        """ Get the matrix (dot) product of multiple matrices and return the new
+            matrix """
+        assert len(matrices) > 0
+        assert all(mat.n == matrices[0].n for mat in matrices)
+        matrices = [matrix.copy() for matrix in reversed(matrices)]
+        for mat_a, mat_b in zip(matrices, matrices[1:]):
+            mat_b.bulk_subst({i: o for i, o in zip(mat_b._input_vars,
+            mat_a._output_vars)})
+        condition_var = matrices[0]._condition_var
+        for mat in matrices:
+            mat.subst(mat._condition_var, condition_var)
+        return WCNFMatrix(
+            reduce(lambda x, y: x & y, (mat._cnf for mat in matrices)),
+            reduce(lambda x, y: x * y, (mat._weight_func for mat in matrices)),
+            matrices[0]._input_vars,
+            matrices[-1]._output_vars,
+            condition_var
         )
 
     @classmethod
-    def kronecker(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
-        """ Compute the kronecker product matrix of one or more other matrices
-            """
+    def kronecker(cls, *matrices: Self) -> Self:
+        """ Get the kronecker product of multiple matrices and return the new
+            matrix """
+        matrices = [mat.copy() for mat in reversed(matrices)]
+        condition_var = matrices[0]._condition_var
+        for mat in matrices:
+            mat.subst(mat._condition_var, condition_var)
+        return WCNFMatrix(
+            reduce(lambda x, y: x & y, (mat._cnf for mat in matrices)),
+            reduce(lambda x, y: x * y, (mat._weight_func for mat in matrices)),
+            sum((mat._input_vars for mat in matrices), []),
+            sum((mat._output_vars for mat in matrices), []),
+            condition_var
+        )
+        raise NotImplementedError
         assert len(matrices) > 0
         index_map = {}
         index_count = 1
@@ -209,59 +215,50 @@ class WCNFMatrix:
             input_vars += [index_map[i, v] for v in mat._input_vars]
             output_vars += [index_map[i, v] for v in mat._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
-    
-    @classmethod
-    def multiply(cls, *matrices: "WCNFMatrix") -> "WCNFMatrix":
-        """ Compute the matrix product of one or more matrices with the same
-            dimensions """
-        assert len(matrices) > 0
-        assert all(m.dimension == matrices[0].dimension for m in matrices)
-        matrices = tuple(reversed(matrices))
-        index_map = {}
-        index_count = 1
-        for i, mat in enumerate(matrices):
-            index_map[i, mat._condition_var] = 1
-            index_map[i, -mat._condition_var] = -1
-        for i in range(len(matrices) - 1):
-            mat = matrices[i]
-            next_mat = matrices[i + 1]
-            for ov, iv in zip(mat._output_vars, next_mat._input_vars):
-                if (i, ov) not in index_map:
-                    index_count += 1
-                    index_map[i, ov] = index_count
-                    index_map[i, -ov] = -index_count
-                index_map[i + 1, iv] = index_map[i, ov]
-                index_map[i + 1, -iv] = index_map[i, -ov]
-        for i, mat in enumerate(matrices):
-            for v in range(1, len(mat._wcnf) + 1):
-                if (i, v) in index_map:
-                    continue
-                index_count += 1
-                index_map[i, v] = index_count
-                index_map[i, -v] = -index_count
-        wcnf = WeightedCNFFormula(index_count)
-        # Set correct weights
-        for v in range(1, index_count + 1):
-            wcnf.weights[v] = wcnf.weights[-v] = 1.0
-        for i, mat in enumerate(matrices):
-            for v in range(1, len(mat._wcnf) + 1):
-                wcnf.weights[index_map[i, v]] *= mat._wcnf.weights[v]
-                wcnf.weights[-index_map[i, v]] *= mat._wcnf.weights[-v]
-        # Add clauses
-        for i, mat in enumerate(matrices):
-            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
-            clause in mat._wcnf.formula.clauses]
-        input_vars = [index_map[0, v] for v in matrices[0]._input_vars]
-        output_vars = [index_map[len(matrices) - 1, v] for v in
-        matrices[-1]._output_vars]
-        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
     @classmethod
-    def linear_comb(cls, *matrices: "tuple[float, WCNFMatrix] | WCNFMatrix"
-    ) -> "WCNFMatrix":
+    def sum(cls, *matrices: Self) -> Self:
+        """ Get the sum of multiple matrices and return the new matrix """
+        return cls.linear_comb(matrices)
+
+    @classmethod
+    def identity(cls, size: int) -> Self:
+        """ Returns an identity matrix with the given size. The size has to be a
+            power of 2 """
+        n = log2(size)
+        if n == -1:
+            raise ValueError(f"Invalid size {size}, must be power of 2")
+        n += 1
+        domain = [BoolVar() for _ in range(n + 1)]
+        cnf = CNF([])
+        weight_func = WeightFunction(domain)
+        weight_func.fill(1.0)
+        return WCNFMatrix(cnf, weight_func, domain[:n], domain[:n], domain[-1])
+
+    @classmethod
+    def zero(cls, shape: tuple[int, int]) -> Self:
+        """ Returns a zero matrix with the given shape. The shape has to be
+            square with lengths powers of 2 """
+        if shape[0] != shape[1]:
+            raise ValueError(f"Input shape should be square, but is {shape}")
+        n = log2(shape[0])
+        if n == -1:
+            raise ValueError(f"Invalid size {shape[0]}, must be power of 2")
+        domain = [BoolVar() for _ in range(n + 2)]
+        c, r = domain[-2], domain[-1]
+        cnf = CNF([[-c, r], [c, -r]])
+        weight_func = WeightFunction(domain)
+        weight_func.fill(1.0)
+        weight_func[r, True] = 0.0
+        return WCNFMatrix(cnf, weight_func, domain[:n], domain[:n], c)
+
+    @classmethod
+    def linear_comb(cls, *matrices: "tuple[float, Self] | Self") -> Self:
         """ Get the representation of a linear combination of matrices. Each
             matrix can be given as a tuple (factor, matrix) or just the matrix
             itself, meaning factor = 1 """
+        # TODO: Implement
+        raise NotImplementedError
         matrices = tuple(m if isinstance(m, tuple) else (1.0, m) for m in
         matrices)
         assert len(matrices) > 0
@@ -311,34 +308,11 @@ class WCNFMatrix:
         matrices[-1][1]._output_vars]
         return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
-    @classmethod
-    def identity(cls, n: int) -> "WCNFMatrix":
-        """ Returns a representation of a 2^n x 2^n identity matrix """
-        return WCNFMatrix(WeightedCNFFormula(n + 1,
-            formula=CNFFormula(n + 1, clauses=[]),
-            weights=VariableWeights(n + 1, weights={
-                **{v: 1.0 for v in range(1, n + 2)},
-                **{-v: 1.0 for v in range(1, n + 2)},
-            })
-        ), list(range(1, n + 1)), list(range(1, n + 1)), n + 1)
-    
-    @classmethod
-    def zero(cls, n: int) -> "WCNFMatrix":
-        """ Returns a representation of a 2^n x 2^n zero matrix """
-        return WCNFMatrix(WeightedCNFFormula(n + 2,
-            formula=CNFFormula(n + 2, clauses=[[-(n + 1), n + 2], [n + 1,
-            -(n + 2)]]),
-            weights=VariableWeights(n + 2, weights={
-                n + 2: 0.0,
-                -(n + 2): 1.0,
-                **{v: 1.0 for v in range(1, n + 2)},
-                **{-v: 1.0 for v in range(1, n + 2)},
-            })
-        ), list(range(1, n + 1)), list(range(1, n + 1)), n + 1)
-
     def _check_valid(self):
         """ Check if the matrix representation is valid. If it is not, raise the
             appropriate exception """
+        # TODO
+        return True
         for i, v in enumerate(self._input_vars):
             if not 0 < v <= len(self._wcnf):
                 raise ValueError(f"Invalid variable in input variables: {v}, "
@@ -374,19 +348,39 @@ class WCNFMatrix:
             f"variable length: {len(self._input_vars)} != "
             f"{len(self._output_vars)}")
 
-WCNFMatrix.PauliZ = WCNFMatrix(WeightedCNFFormula(3,
-    formula=CNFFormula(3, clauses=[[-1, 2], [-1, 3], [1, -2, -3]]),
-    weights=VariableWeights(3, weights={
-        1: -1.0, -1: 1.0,
-        **{v: 1.0 for v in (2, 3)},
-        **{-v: 1.0 for v in (2, 3)},
-    })
-), [2], [2], 3)
-WCNFMatrix.PauliX = WCNFMatrix(WeightedCNFFormula(3,
-    formula=CNFFormula(3, clauses=[[1, -2, 3], [-1, -2, -3], [-1, 2, 3], [1, 2,
-    -3]]),
-    weights=VariableWeights(3, weights={
-        **{v: 1.0 for v in (1, 2, 3)},
-        **{-v: 1.0 for v in (1, 2, 3)},
-    })
-), [1], [2], 3)
+def pauli_z() -> WCNFMatrix:
+    """ Constructs a Pauli Z matrix with newly initialized variables """
+    r, x, c = BoolVar(), BoolVar(), BoolVar()
+    # r <-> (x and c)
+    cnf = CNF([[-r, x], [-r, c], [r, -x, -c]])
+    weight_func = WeightFunction([r, x, c])
+    weight_func.fill(1.0)
+    weight_func[r, True] = -1.0
+    return WCNFMatrix(cnf, weight_func, [x], [x], c)
+
+def pauli_x() -> WCNFMatrix:
+    """ Constructs a Pauli X matrix with newly initialized variables """
+    x, y, c = BoolVar(), BoolVar(), BoolVar()
+    # y <-> (x XOR c)
+    cnf = CNF([[-y, x, c], [-y, -x, -c], [y, x, -c], [y, -x, c]])
+    weight_func = WeightFunction([x, y, c])
+    weight_func.fill(1.0)
+    return WCNFMatrix(cnf, weight_func, [x], [y], c)
+
+def log2(x: int) -> int:
+    """ Get the log2 of a number, or -1 if x is not a perfect power of 2 """
+    last_one = False
+    if x < 1:
+        return -1
+    lg = 0
+    while x > 1:
+        if last_one:
+            return -1
+        if x & 1:
+            last_one = True
+        x >>= 1
+        lg += 1
+    return lg
+
+WCNFMatrix.PauliZ = pauli_z()
+WCNFMatrix.PauliX = pauli_x()

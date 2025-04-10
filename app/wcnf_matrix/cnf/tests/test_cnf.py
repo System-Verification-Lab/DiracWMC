@@ -8,6 +8,7 @@ def test_add():
     b = CNF([[z], [w]])
     c = CNF([[x, y], [z], [w]])
     assert c == a + b
+    assert c == a & b
 
 def test_not_add():
     x, y, z = BoolVar(), BoolVar(), BoolVar()
@@ -22,6 +23,18 @@ def test_add_clause():
     a.add_clause([x, z])
     assert a == CNF([[x, y], [x], [x, z]])
 
-def inner_clause_order():
+def test_inner_clause_order():
     a, b = BoolVar(), BoolVar()
     assert CNF([[a, b]]) == CNF([[b, a]])
+
+def test_subst():
+    a, b = BoolVar(), BoolVar()
+    cnf = CNF([[a]])
+    cnf.subst(a, b)
+    assert cnf == CNF([[b]])
+
+def test_bulk_subst():
+    a, b, c, d = BoolVar(), BoolVar(), BoolVar(), BoolVar()
+    cnf = CNF([[a, b], [c]])
+    cnf.bulk_subst({a: b, b: c, c: a})
+    assert cnf == CNF([[c, b], [a]])

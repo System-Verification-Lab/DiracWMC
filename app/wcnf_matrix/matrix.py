@@ -199,7 +199,7 @@ class WCNFMatrix(AbstractMatrix[float]):
     @classmethod
     def sum(cls, *matrices: Self) -> Self:
         """ Get the sum of multiple matrices and return the new matrix """
-        return cls.linear_comb(matrices)
+        return cls.linear_comb(*matrices)
 
     @classmethod
     def identity(cls, size: int) -> Self:
@@ -208,7 +208,6 @@ class WCNFMatrix(AbstractMatrix[float]):
         n = log2(size)
         if n == -1:
             raise ValueError(f"Invalid size {size}, must be power of 2")
-        n += 1
         domain = [BoolVar() for _ in range(n + 1)]
         cnf = CNF([])
         weight_func = WeightFunction(domain)
@@ -239,62 +238,36 @@ class WCNFMatrix(AbstractMatrix[float]):
             itself, meaning factor = 1 """
         matrices = tuple(mat if isinstance(mat, tuple) else (1.0, mat) for mat
         in matrices)
+        matrices = tuple((factor, mat.copy()) for factor, mat in matrices)
         if len(matrices) <= 0:
             raise ValueError("Cannot determine linear combination of zero "
             "matrices")
         if not all(mat.shape == matrices[0][1].shape for _, mat in matrices):
             raise ValueError("Not all matrices in the linear combination have "
             "the same shape")
-        # TODO: Implement
-        raise NotImplementedError
-        matrices = tuple(m if isinstance(m, tuple) else (1.0, m) for m in
-        matrices)
-        assert len(matrices) > 0
-        assert all(m.dimension == matrices[0][1].dimension for _, m in matrices)
-        index_map = {}
-        index_count = 1
-        for i in range(len(matrices) - 1):
-            mat, next_mat = matrices[i][1], matrices[i + 1][1]
-            for ov, iv in zip(mat._output_vars, next_mat._input_vars):
-                if (i, ov) not in index_map:
-                    index_count += 1
-                    index_map[i, ov] = index_count
-                    index_map[i, -ov] = -index_count
-                index_map[i + 1, iv] = index_map[i, ov]
-                index_map[i + 1, -iv] = index_map[i, -ov]
-        for i, (_, mat) in enumerate(matrices):
-            for v in range(1, len(mat._wcnf) + 1):
-                if (i, v) in index_map:
-                    continue
-                index_count += 1
-                index_map[i, v] = index_count
-                index_map[i, -v] = -index_count
-        wcnf = WeightedCNFFormula(index_count)
-        # Weights
-        for v in range(1, index_count + 1):
-            wcnf.weights[v] = wcnf.weights[-v] = 1.0
-        for i, (_, mat) in enumerate(matrices):
-            for v in range(1, len(mat._wcnf) + 1):
-                wcnf.weights[index_map[i, v]] *= mat._wcnf.weights[v]
-                wcnf.weights[index_map[i, -v]] *= mat._wcnf.weights[-v]
-        for i, (factor, mat) in enumerate(matrices):
-            wcnf.weights[index_map[i, mat._condition_var]] = factor
-        # Clauses
-        for i, (_, mat) in enumerate(matrices):
-            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
-            clause in mat._wcnf.formula.clauses]
-        for i, (_, mati) in enumerate(matrices):
-            for j, (_, matj) in enumerate(matrices[i + 1:], i + 1):
-                wcnf.formula.clauses.append([-1, index_map[i,
-                -mati._condition_var], index_map[j, -matj._condition_var]])
-        wcnf.formula.clauses.append([-1, *(index_map[i, mat._condition_var] for
-        i, (_,  mat) in enumerate(matrices))])
-        for i, (_, mat) in enumerate(matrices):
-            wcnf.formula.clauses.append([1, -index_map[i, mat._condition_var]])
-        input_vars = [index_map[0, v] for v in matrices[0][1]._input_vars]
-        output_vars = [index_map[len(matrices) - 1, v] for v in
-        matrices[-1][1]._output_vars]
-        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
+        for (_, mat_a), (_, mat_b) in zip(matrices, matrices[1:]):
+            mat_b.bulk_subst({i: o for i, o in zip(mat_b._input_vars,
+            mat_a._output_vars)})
+        condition_var = BoolVar()
+        cnf = reduce(lambda x, y: x & y, (mat._cnf for _, mat in matrices))
+        cnf.add_clause(*([condition_var, -mat._condition_var] for _, mat in
+        matrices))
+        cnf.add_clause([-condition_var, *(mat._condition_var for _, mat in
+        matrices)])
+        for i, (_, mat_a) in enumerate(matrices):
+            for _, mat_b in matrices[i + 1:]:
+                cnf.add_clause([-condition_var, -mat_a._condition_var,
+                -mat_b._condition_var])
+        weight_func = matrices[0][1]._weight_func
+        for _, mat in matrices[1:]:
+            weight_func *= mat._weight_func
+        weight_func *= WeightFunction([condition_var], weights={condition_var:
+        (1.0, 1.0)})
+        for factor, mat in matrices:
+            weight_func[mat._condition_var, True] = factor
+        matrix = WCNFMatrix(cnf, weight_func, matrices[0][1]._input_vars,
+        matrices[-1][1]._output_vars, condition_var)
+        return matrix
 
     def _check_valid(self):
         """ Check if the matrix representation is valid. If it is not, raise the

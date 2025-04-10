@@ -84,6 +84,10 @@ class AbstractMatrix[EntryType](ABC):
             return self.__class__.product(*((self,) * other))
         return self.__class__.kronecker(self, other)
     
+    def __neg__(self) -> Self:
+        """ Multiplication with -1 """
+        return self.scalar_product(-1)
+    
     @property
     @abstractmethod
     def shape(self) -> tuple[int, int]:

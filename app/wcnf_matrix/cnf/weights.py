@@ -55,12 +55,19 @@ class WeightFunction:
             one of the weight functions is chosen. """
         return self.combine(other, lambda x, y: x + y)
 
-    def __mul__(self, other: "WeightFunction") -> "WeightFunction":
+    def __mul__(self, other: "WeightFunction | float") -> "WeightFunction":
         """ Multiply two weight functions where they overlap. For variables
             where they do not overlap or one of the values is None, the values
-            from one of the weight functions is chosen. """
-        return self.combine(other, lambda x, y: x * y)
+            from one of the weight functions is chosen. If the value is a
+            scalar, all weights are multiplied with this scalar """
+        if isinstance(other, WeightFunction):
+            return self.combine(other, lambda x, y: x * y)
+        return self.apply(lambda v: None if v is None else v * other)
     
+    def __rmul__(self, other: float) -> "WeightFunction":
+        """ Multiply all weights with the given scalar """
+        return self.__mul__(other)
+
     def __sub__(self, other: "WeightFunction") -> "WeightFunction":
         """ Subtract two weight functions where they overlap. For variables
             where they do not overlap or one of the values is None, the values
@@ -194,7 +201,8 @@ class WeightFunction:
             yield (var, False, neg)
             yield (var, True, pos)
 
-    def apply(self, func: Callable[[float], float]) -> "WeightFunction":
+    def apply(self, func: Callable[[float | None], float | None]) -> (
+    "WeightFunction"):
         """ Apply the given function to all weights and return the resulting
             weight function """
         return WeightFunction(self._domain, weights={var: (func(neg), func(pos))

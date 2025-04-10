@@ -158,8 +158,10 @@ class WCNFMatrix(AbstractMatrix[float]):
     def product(cls, *matrices: Self) -> Self:
         """ Get the matrix (dot) product of multiple matrices and return the new
             matrix """
-        assert len(matrices) > 0
-        assert all(mat.n == matrices[0].n for mat in matrices)
+        if len(matrices) <= 0:
+            raise ValueError("Cannot determine product of zero matrices")
+        if not all(mat.n == matrices[0].n for mat in matrices):
+            raise ValueError("Not all matrices in product have the same size")
         matrices = [matrix.copy() for matrix in reversed(matrices)]
         for mat_a, mat_b in zip(matrices, matrices[1:]):
             mat_b.bulk_subst({i: o for i, o in zip(mat_b._input_vars,
@@ -179,6 +181,9 @@ class WCNFMatrix(AbstractMatrix[float]):
     def kronecker(cls, *matrices: Self) -> Self:
         """ Get the kronecker product of multiple matrices and return the new
             matrix """
+        if len(matrices) <= 0:
+            raise ValueError("Cannot determine kronecker product of zero "
+            "matrices")
         matrices = [mat.copy() for mat in reversed(matrices)]
         condition_var = matrices[0]._condition_var
         for mat in matrices:
@@ -190,31 +195,6 @@ class WCNFMatrix(AbstractMatrix[float]):
             sum((mat._output_vars for mat in matrices), []),
             condition_var
         )
-        raise NotImplementedError
-        assert len(matrices) > 0
-        index_map = {}
-        index_count = 1
-        for i, mat in enumerate(matrices):
-            for v in range(1, len(mat._wcnf) + 1):
-                if v == mat._condition_var:
-                    index_map[i, v] = 1
-                    index_map[i, -v] = -1
-                else:
-                    index_count += 1
-                    index_map[i, v] = index_count
-                    index_map[i, -v] = -index_count
-        wcnf = WeightedCNFFormula(index_count)
-        for i, mat in enumerate(matrices):
-            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
-            clause in mat._wcnf.formula.clauses]
-            for v in range(1, len(mat._wcnf) + 1):
-                wcnf.weights[index_map[i, v]] = mat._wcnf.weights[v]
-                wcnf.weights[-index_map[i, v]] = mat._wcnf.weights[-v]
-        input_vars, output_vars = [], []
-        for i, mat in reversed(list(enumerate(matrices))):
-            input_vars += [index_map[i, v] for v in mat._input_vars]
-            output_vars += [index_map[i, v] for v in mat._output_vars]
-        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
 
     @classmethod
     def sum(cls, *matrices: Self) -> Self:
@@ -257,6 +237,14 @@ class WCNFMatrix(AbstractMatrix[float]):
         """ Get the representation of a linear combination of matrices. Each
             matrix can be given as a tuple (factor, matrix) or just the matrix
             itself, meaning factor = 1 """
+        matrices = tuple(mat if isinstance(mat, tuple) else (1.0, mat) for mat
+        in matrices)
+        if len(matrices) <= 0:
+            raise ValueError("Cannot determine linear combination of zero "
+            "matrices")
+        if not all(mat.shape == matrices[0][1].shape for _, mat in matrices):
+            raise ValueError("Not all matrices in the linear combination have "
+            "the same shape")
         # TODO: Implement
         raise NotImplementedError
         matrices = tuple(m if isinstance(m, tuple) else (1.0, m) for m in

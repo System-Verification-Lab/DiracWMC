@@ -1,5 +1,5 @@
 
-from app.wcnf_matrix import WCNFMatrix
+from app.wcnf_matrix import WCNFMatrix, pack_wcnf_formula
 from app.wcnf.solver import DPMCSolver
 from app.quantum_ising import QuantumIsingModel
 
@@ -21,10 +21,8 @@ for i in range(len(model)):
     matrices.append((BETA * model.external_field_x, xi))
 
 hamiltonian = WCNFMatrix.linear_comb(*matrices)
-cnf, weight_func = hamiltonian.exp(2).trace()
-print(len(weight_func))
-print(weight_func(cnf))
-exit()
+cnf, weight_func = hamiltonian.exp(1).trace()
+trace_formula = pack_wcnf_formula(cnf, weight_func)
 solver = DPMCSolver()
 print("True partition function:", model.partition_function(BETA))
 print("Solver estimate:", solver.run_solver(trace_formula).total_weight)

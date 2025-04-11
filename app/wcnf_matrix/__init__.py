@@ -1,2 +1,2 @@
 
-from .matrix_old import WCNFMatrix
+from .matrix import WCNFMatrix

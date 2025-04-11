@@ -113,6 +113,7 @@ class WCNFMatrix(AbstractMatrix[float]):
     def exp(self, terms: int) -> "WCNFMatrix":
         """ Get the representation of the matrix sum(k=0..terms-1) matrix^k/k!,
             which is an approximation of e^matrix """
+        # TODO: Implement
         assert terms >= 1
         if terms == 1:
             return self.__class__.identity(self.n)

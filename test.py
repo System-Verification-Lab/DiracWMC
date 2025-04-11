@@ -10,14 +10,14 @@ model = QuantumIsingModel.from_string(open(MODEL_FILE).read())
 matrices: list[tuple[float, WCNFMatrix]] = []
 
 for i, j, strength in model.interactions():
-    zi = WCNFMatrix.PauliZ.local_matrix(len(model), i)
-    zj = WCNFMatrix.PauliZ.local_matrix(len(model), j)
+    zi = WCNFMatrix.PauliZ.local_matrix(1 << i, 1 << len(model))
+    zj = WCNFMatrix.PauliZ.local_matrix(1 << j, 1 << len(model))
     matrices.append((BETA * strength, zi * zj))
 
 for i in range(len(model)):
-    zi = WCNFMatrix.PauliZ.local_matrix(len(model), i)
+    zi = WCNFMatrix.PauliZ.local_matrix(1 << i, 1 << len(model))
     matrices.append((BETA * model.external_field_z, zi))
-    xi = WCNFMatrix.PauliX.local_matrix(len(model), i)
+    xi = WCNFMatrix.PauliX.local_matrix(1 << i, 1 << len(model))
     matrices.append((BETA * model.external_field_x, xi))
 
 hamiltonian = WCNFMatrix.linear_comb(*matrices)

@@ -109,18 +109,26 @@ class AbstractMatrix[EntryType](ABC):
         """ Get the scalar product of this matrix with some factor """
         pass
 
-    def local_matrix(self, index: int, size: int) -> Self:
+    def local_matrix(self, index: int, size: int, *, q: int = 2) -> Self:
         """ Assumes this matrix is square. Returns the matrix that is the
-            kronecker product of I_index, the current matrix, and I_(size -
-            index - cur_size), where cur_size is the size of the current matrix
-            """
+            kronecker product of I_(q^index), the current matrix, and I_(q^(size
+            - index - log_q(cur_size))), where cur_size is the size of the
+            current matrix. By default q is set to 2, it can be set to any value
+            higher than 2. Note that the size of the current matrix should be a
+            power of q exactly """
         if self.shape[0] != self.shape[1]:
             raise ValueError("To apply local_matrix, the matrix needs to be "
             f"square. The given matrix has shape {self.shape}")
+        log_size = log_base(self.shape[0], q)
+        if log_size == -1:
+            raise ValueError(f"Cannot apply local_matrix on matrix with "
+            f"dimension that is not a power of q = {q}. Given shape is "
+            f"{self.shape}")
+        
         return self.__class__.kronecker(
-            self.__class__.identity(index),
+            self.__class__.identity(1 << index),
             self,
-            self.__class__.identity(size - index - self.shape[0])
+            self.__class__.identity(1 << (size - index - log_size))
         )
 
     @classmethod
@@ -154,3 +162,17 @@ class AbstractMatrix[EntryType](ABC):
     def zero(cls, shape: tuple[int, int]) -> Self:
         """ Get the zero matrix with the given shape """
         pass
+
+def log_base(val: int, q: int):
+    """ Calculate log_q(val). If val is not a perfect power of q this returns -1
+        """
+    if val <= 0:
+        raise ValueError(f"Cannot calculate logarithm of non-positive value "
+        f"{val}")
+    total = 1
+    while val > 1:
+        if val % q != 0:
+            return -1
+        total += 1
+        val //= q
+    return total

@@ -124,7 +124,6 @@ class AbstractMatrix[EntryType](ABC):
             raise ValueError(f"Cannot apply local_matrix on matrix with "
             f"dimension that is not a power of q = {q}. Given shape is "
             f"{self.shape}")
-        
         return self.__class__.kronecker(
             self.__class__.identity(1 << index),
             self,
@@ -169,7 +168,7 @@ def log_base(val: int, q: int):
     if val <= 0:
         raise ValueError(f"Cannot calculate logarithm of non-positive value "
         f"{val}")
-    total = 1
+    total = 0
     while val > 1:
         if val % q != 0:
             return -1

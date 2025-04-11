@@ -116,6 +116,9 @@ class WCNFMatrix(AbstractMatrix[float]):
             raise ValueError(f"Cannot approximate exponential with {terms} "
             "terms")
         matrices = [self.copy() for _ in range(terms)]
+        for mat_a, mat_b in zip(matrices, matrices[1:]):
+            mat_b.bulk_subst({i: o for i, o in zip(mat_b._input_vars,
+            mat_a._output_vars)})
         condition_var = BoolVar()
         cnf = reduce(lambda x, y: x & y, (mat._cnf for mat in matrices))
         for mat_a, mat_b in zip(matrices, matrices[1:]):

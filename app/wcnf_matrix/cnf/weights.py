@@ -100,6 +100,10 @@ class WeightFunction:
             weight function. Calculated using brute force """
         return self.model_count(cnf)
 
+    def __len__(self) -> int:
+        """ Number of variables in the domain of the weight function """
+        return len(self._domain)
+
     def compare(self, other: "WeightFunction", func: Callable[[float | None,
     float | None], bool], *, same_domain: bool = False) -> bool:
         """ Compare two weight functions given a compare function. If the

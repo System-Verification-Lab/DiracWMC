@@ -1,9 +1,7 @@
 
-from itertools import product
 from functools import reduce
-from typing import Iterable, Iterator, Mapping, Self
+from typing import Iterable, Mapping, Self
 from .cnf import CNF, WeightFunction, BoolVar
-from ..wcnf import WeightedCNFFormula, CNFFormula, VariableWeights
 from .abstract_matrix import AbstractMatrix
 
 class WCNFMatrix(AbstractMatrix[float]):
@@ -100,60 +98,37 @@ class WCNFMatrix(AbstractMatrix[float]):
         self._weight_func.bulk_subst(var_map)
         self._check_valid()
 
-    def trace(self) -> "WeightedCNFFormula":
-        """ Get a weighted CNF formula such that the total weight of the formula
-            is equal to the trace of the matrix """
+    def trace(self) -> tuple[CNF, WeightFunction]:
+        """ Get a CNF formula and weight function such that weight_func(cnf)
+            (the model count of cnf w.r.t. weight_func) is equal to the trace of
+            this matrix """
         cnf = self._cnf.copy()
         cnf.add_clause([self._condition_var])
         for x, y in zip(self._input_vars, self._output_vars):
             if x is not y:
                 cnf.add_clause([x, -y], [-x, y])
-        return self._weight_func(cnf)
+        return cnf, self._weight_func
 
     def exp(self, terms: int) -> "WCNFMatrix":
         """ Get the representation of the matrix sum(k=0..terms-1) matrix^k/k!,
             which is an approximation of e^matrix """
-        # TODO: Implement
-        assert terms >= 1
-        if terms == 1:
-            return self.__class__.identity(self.n)
-        index_map = {}
-        index_count = 1
-        for i in range(1, terms - 1):
-            for iv, ov in zip(self._input_vars, self._output_vars):
-                if (i, ov) not in index_map:
-                    index_count += 1
-                    index_map[i, ov] = index_count
-                    index_map[i, -ov] = -index_count
-                index_map[i + 1, iv] = index_map[i, ov]
-                index_map[i + 1, -iv] = index_map[i, -ov]
-        for i in range(1, terms):
-            for v in range(1, len(self._wcnf) + 1):
-                if (i, v) in index_map:
-                    continue
-                index_count += 1
-                index_map[i, v] = index_count
-                index_map[i, -v] = -index_count
-        wcnf = WeightedCNFFormula(index_count)
-        # Add clauses
-        for i in range(1, terms):
-            wcnf.formula.clauses += [[index_map[i, v] for v in clause] for
-            clause in self._wcnf.formula.clauses]
-        condition_vars = [1, *(index_map[i, self._condition_var] for i in
-        range(1, terms))]
-        for c1, c2 in zip(condition_vars[:-1], condition_vars[1:]):
-            wcnf.formula.clauses.append([-c2, c1])
-        # Set weights
-        for i in range(1, index_count + 1):
-            wcnf.weights[i] = wcnf.weights[-i] = 1.0
-        for i, v in product(range(1, terms), range(1, len(self._wcnf) + 1)):
-            wcnf.weights[index_map[i, v]] *= self._wcnf.weights[v]
-            wcnf.weights[index_map[i, -v]] *= self._wcnf.weights[-v]
-        for i, c in enumerate(condition_vars[1:], 1):
-            wcnf.weights[c] = 1.0 / i
-        input_vars = [index_map[1, v] for v in self._input_vars]
-        output_vars = [index_map[terms - 1, v] for v in self._output_vars]
-        return WCNFMatrix(wcnf, input_vars, output_vars, 1)
+        if terms <= 0:
+            raise ValueError(f"Cannot approximate exponential with {terms} "
+            "terms")
+        matrices = [self.copy() for _ in range(terms)]
+        condition_var = BoolVar()
+        cnf = reduce(lambda x, y: x & y, (mat._cnf for mat in matrices))
+        for mat_a, mat_b in zip(matrices, matrices[1:]):
+            cnf.add_clause([-mat_b._condition_var, mat_a._condition_var])
+        cnf.add_clause([condition_var, -matrices[0]._condition_var])
+        weight_func = reduce(lambda x, y: x * y, (mat._weight_func for mat in
+        matrices))
+        weight_func *= WeightFunction([condition_var], weights={condition_var:
+        (1.0, 1.0)})
+        for i, mat in enumerate(matrices, 1):
+            weight_func[mat._condition_var, True] = 1 / i
+        return WCNFMatrix(cnf, weight_func, matrices[0]._input_vars,
+        matrices[-1]._output_vars, condition_var)
 
     @classmethod
     def product(cls, *matrices: Self) -> Self:

@@ -1,0 +1,17 @@
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wcnf_matrix"
+version = "0.0.1"
+description = "A package for matrix operations using CNF formulae with weight functions"
+authors = [
+    {name = "Dirck van den Ende" }
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy",
+]

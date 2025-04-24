@@ -7,4 +7,4 @@ install:
 	pip install .
 
 test: install
-	pytest
+	pytest -s

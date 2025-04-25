@@ -11,6 +11,10 @@ class Index[Field]:
         self.q = q
         self.field = field
 
+    def __str__(self) -> str:
+        """ String representation of the index for debugging """
+        return "Index" + str(id(self) % 10000).zfill(4)
+
     def __getitem__(self, value: int) -> "IndexBasisElement[Field]":
         """ Get one of the basis elements of this Hilbert space """
         return IndexBasisElement(self, value)
@@ -26,6 +30,10 @@ class IndexBasisElement[Field]:
         if not 0 <= value < self.index.q:
             raise ValueError(f"Element |{value}> is not in the standard basis "
             f"of a {self.index.q}-state Hilbert space")
+
+    def __str__(self) -> str:
+        """ String representation of the basis element for debugging """
+        return f"{self.index}[{self.value}]"
 
     def __eq__(self, other: Any) -> bool:
         """ Two basis elements are equal if their indices and values are the

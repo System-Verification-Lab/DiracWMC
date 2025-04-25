@@ -12,3 +12,12 @@ def test_neq_different_index():
 def test_eq_small():
     T = Index()
     assert Matrix(T, [[4]]) == Matrix(T, [[4]])
+
+def test_kron():
+    T = Index()
+    assert Matrix(T, [
+        [0, 0, 0, 1],
+        [0, 0, 0, 1],
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+    ]) == Matrix(T, [[0, 1], [1, 0]]) ** Matrix(T, [[0, 1], [0, 1]])

@@ -83,13 +83,23 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
 
     @classmethod
     def product(cls, *elements: Self) -> Self:
+        if not all(elt._index == elements[0]._index for elt in elements):
+            raise ValueError("Cannot calculate product of matrices with "
+            "different index")
         return reduce(cls._multiply_matrices, elements)
+
+    @classmethod
+    def kron(cls, *elements: Self) -> Self:
+        if not all(elt._index == elements[0]._index for elt in elements):
+            raise ValueError("Cannot calculate product of matrices with "
+            "different index")
+        return reduce(cls._kron_matrices, elements)
 
     @property
     def shape(self) -> tuple[int, int]:
         """ The shape of the matrix as a tuple (rows, columns) """
         return (len(self._values), len(self._values[0]))
-    
+
     @classmethod
     def _multiply_matrices(cls, left: Self, right: Self) -> Self:
         """ Multiply two matrices and return the result. Assumes matrices have
@@ -103,4 +113,18 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         for i, j in product(range(left.shape[0]), range(right.shape[1])):
             for k in range(left.shape[1]):
                 values[i][j] += left._values[i][k] * right._values[k][j]
+        return ConcreteMatrix(left._index, values)
+    
+    @classmethod
+    def _kron_matrices(cls, left: Self, right: Self) -> Self:
+        """ Compute the kronecker product of two matrices and return the result.
+            Assumes matrices have the same index """
+        zero = left._index.field(0)
+        values = [[zero for _ in range(left.shape[1] * right.shape[1])] for _ in
+        range(left.shape[0] * right.shape[1])]
+        for left_i, right_i, left_j, right_j in product(range(left.shape[0]),
+        range(right.shape[0]), range(left.shape[0]), range(right.shape[1])):
+            values[left_i * right.shape[0] + right_i][left_j * right.shape[1] +
+            right_j] = left._values[left_i][left_j] * right._values[right_i][
+            right_j]
         return ConcreteMatrix(left._index, values)

@@ -30,6 +30,10 @@ class AbstractMatrix[Field](ABC):
         """ Multiply this matrix with a scalar value on the left """
         return self.__class__.linear_comb((self._index.field(other), self))
 
+    def __pow__(self, other: Self) -> Self:
+        """ Return the Kronecker product of this matrix and another """
+        return self.__class__.kron(self, other)
+
     @abstractmethod
     def __eq__(self, other: Any) -> bool:
         """ Returns if this matrix is equal to another object. Comparing to any
@@ -60,4 +64,11 @@ class AbstractMatrix[Field](ABC):
     @abstractmethod
     def product(cls, *elements: Self) -> Self:
         """ Returns the product of matrices given from left to right """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def kron(cls, *elements: Self) -> Self:
+        """ Returns the kronecker product of zero or more matrices. In the case
+            of zero matrices the 1x1 identity matrix is returned """
         pass

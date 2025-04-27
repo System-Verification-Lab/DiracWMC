@@ -1,4 +1,5 @@
 
+from __future__ import annotations
 from typing import Any, Iterator
 
 class Index[Field]:
@@ -15,7 +16,7 @@ class Index[Field]:
         """ String representation of the index for debugging """
         return "Index" + str(id(self) % 10000).zfill(4)
 
-    def __getitem__(self, value: int) -> "IndexBasisElement[Field]":
+    def __getitem__(self, value: int) -> IndexBasisElement[Field]:
         """ Get one of the basis elements of this Hilbert space """
         return IndexBasisElement(self, value)
 

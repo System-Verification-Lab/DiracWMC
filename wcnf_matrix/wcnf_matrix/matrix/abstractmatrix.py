@@ -106,6 +106,15 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         return all(all(a == b for a, b in zip(row_a, row_b)) for row_a, row_b in
         zip(self._values, other._values))
 
+    def __getitem__(self, key: tuple[int, int]) -> Field:
+        """ Get an entry from the matrix given by (row, column) """
+        return self._values[key[0]][key[1]]
+    
+    def __setitem__(self, key: tuple[int, int], value: Field):
+        """ Set an entry in the matrix at position (row, column) to the given
+            value """
+        self._values[key[0]][key[1]] = value
+
     @classmethod
     def bra[Field](cls, *elements: IndexBasisElement[Field]) -> ConcreteMatrix[
     Field]:

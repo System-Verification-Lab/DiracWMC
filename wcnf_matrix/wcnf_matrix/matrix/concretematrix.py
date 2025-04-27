@@ -28,7 +28,8 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         zip(self._values, other._values))
 
     @classmethod
-    def bra(cls, *elements: IndexBasisElement[Field]) -> Self:
+    def bra[Field](cls, *elements: IndexBasisElement[Field]) -> (
+    "ConcreteMatrix[Field]"):
         if len(elements) == 0:
             raise ValueError("Cannot construct bra from zero basis elements")
         if not all(elt.index == elements[0].index for elt in elements):
@@ -42,7 +43,8 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         range(q ** len(elements))]])
 
     @classmethod
-    def ket(cls, *elements: IndexBasisElement[Field]) -> Self:
+    def ket[Field](cls, *elements: IndexBasisElement[Field]) -> (
+    "ConcreteMatrix[Field]"):
         if len(elements) == 0:
             raise ValueError("Cannot construct ket from zero basis elements")
         if not all(elt.index == elements[0].index for elt in elements):
@@ -56,7 +58,8 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         in range(q ** len(elements))])
     
     @classmethod
-    def linear_comb(cls, *elements: tuple[Field, Self] | Self) -> Self:
+    def linear_comb[Field](cls, *elements: """tuple[Field, ConcreteMatrix[Field]
+    ] | ConcreteMatrix[Field]""") -> "ConcreteMatrix[Field]":
         if len(elements) == 0:
             raise ValueError("Cannot determine linear combination of zero "
             "matrices")
@@ -82,14 +85,16 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         return ConcreteMatrix(index, values)
 
     @classmethod
-    def product(cls, *elements: Self) -> Self:
+    def product[Field](cls, *elements: "ConcreteMatrix[Field]") -> (
+    "ConcreteMatrix[Field]"):
         if not all(elt._index == elements[0]._index for elt in elements):
             raise ValueError("Cannot calculate product of matrices with "
             "different index")
         return reduce(cls._multiply_matrices, elements)
 
     @classmethod
-    def kron(cls, *elements: Self) -> Self:
+    def kron[Field](cls, *elements: "ConcreteMatrix[Field]") -> (
+    "ConcreteMatrix[Field]"):
         if not all(elt._index == elements[0]._index for elt in elements):
             raise ValueError("Cannot calculate product of matrices with "
             "different index")
@@ -101,7 +106,8 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         return (len(self._values), len(self._values[0]))
 
     @classmethod
-    def _multiply_matrices(cls, left: Self, right: Self) -> Self:
+    def _multiply_matrices[Field](cls, left: "ConcreteMatrix[Field]", right:
+    "ConcreteMatrix[Field]") -> "ConcreteMatrix[Field]":
         """ Multiply two matrices and return the result. Assumes matrices have
             the same index """
         if left.shape[1] != right.shape[0]:
@@ -116,7 +122,8 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         return ConcreteMatrix(left._index, values)
     
     @classmethod
-    def _kron_matrices(cls, left: Self, right: Self) -> Self:
+    def _kron_matrices[Field](cls, left: "ConcreteMatrix[Field]", right:
+    "ConcreteMatrix[Field]") -> "ConcreteMatrix[Field]":
         """ Compute the kronecker product of two matrices and return the result.
             Assumes matrices have the same index """
         zero = left._index.field(0)

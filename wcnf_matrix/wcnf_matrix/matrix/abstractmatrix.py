@@ -85,9 +85,9 @@ class AbstractMatrix[Field](ABC):
     @abstractmethod
     def permutation(self, src_indices: Iterable[int]) -> Self:
         """ Get the matrix that is the result of permuting the (q-dimensional)
-            sub-Hilbert spaces. Every entry in src_indices indicates an index of
-            a sub-Hilbert space from the original matrix, -1 indicates that a
-            new sub-Hilbert space is added, with the identity operator acting on
+            Hilbert subspaces. Every entry in src_indices indicates an index of
+            a Hilbert subspace from the original matrix, -1 indicates that a
+            new Hilbert subspace is added, with the identity operator acting on
             it. This method throws a RuntimeError if the matrix is not square
             """
         pass

@@ -82,6 +82,17 @@ class AbstractMatrix[Field](ABC):
             memory """
         pass
 
+    @abstractmethod
+    def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
+    | None = None) -> Self:
+        """ Get the matrix that is the result of permuting the (q-dimensional)
+            sub-Hilbert spaces. Every entry in src_indices and dst_indices
+            indicates an index of a sub-Hilbert space from the input/output of
+            the original matrix, -1 indices that a new sub-Hilbert space is
+            added, with the identity operator acting on it. If dst_indices is
+            None, it is set to the same value as src_indices """
+        pass
+
 
 
 class ConcreteMatrix[Field](AbstractMatrix[Field]):
@@ -114,6 +125,14 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         """ Set an entry in the matrix at position (row, column) to the given
             value """
         self._values[key[0]][key[1]] = value
+
+    @classmethod
+    def zeros[Field](cls, index: Index[Field], shape: tuple[int, int]) -> (
+    ConcreteMatrix[Field]):
+        """ Get a concrete matrix with the given dimensions, filled with zeros
+            """
+        return ConcreteMatrix(index, ((0 for _ in range(shape[1])) for _ in
+        range(shape[0])))
 
     @classmethod
     def bra[Field](cls, *elements: IndexBasisElement[Field]) -> ConcreteMatrix[
@@ -192,6 +211,21 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
     def shape(self) -> tuple[int, int]:
         """ The shape of the matrix as a tuple (rows, columns) """
         return (len(self._values), len(self._values[0]))
+    
+    @property
+    def log_shape(self) -> tuple[int, int]:
+        """ The shape of the matrix log base q. If these values are not both
+            integers, a RuntimeError is thrown """
+        q = self._index.q
+        def exact_log(val: int) -> int:
+            out = 0
+            while val > 1:
+                if val % q != 0:
+                    raise RuntimeError("Log of matrix shape is not exact")
+                val //= q
+                out += 1
+            return out
+        return exact_log(self.shape[0]), exact_log(self.shape[1])
 
     def copy(self) -> ConcreteMatrix[Field]:
         """ Returns a copy of the matrix """
@@ -199,6 +233,36 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
 
     def value(self) -> ConcreteMatrix[Field]:
         return self.copy()
+
+    def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
+    | None = None) -> Self:
+        src_indices = list(src_indices)
+        dst_indices = src_indices if dst_indices is None else list(dst_indices)
+        log_shape = self.log_shape
+        if not all(-1 <= i < log_shape[0] for i in dst_indices):
+            raise ValueError(f"dst_indices not in range [-1, {log_shape[0]})")
+        if not all(-1 <= i < log_shape[1] for i in src_indices):
+            raise ValueError(f"src_indices not in range [-1, {log_shape[1]})")
+        q = self._index.q
+        shape: tuple[int, int] = (q ** len(dst_indices), q ** len(src_indices))
+        def get_index(indices: list[int], index: int):
+            powers = []
+            for _ in indices:
+                powers.append(index % q)
+                index //= q
+            p = 1
+            tot = 0
+            for target_index in indices:
+                if target_index == -1:
+                    continue
+                tot += p * powers[target_index]
+                p *= q
+            return tot
+        out = ConcreteMatrix.zeros(self._index, shape)
+        for i, j in product(range(shape[0]), range(shape[1])):
+            di, dj = get_index(dst_indices, i), get_index(src_indices, j)
+            out[i, j] = self[di, dj]
+        return out
 
     @classmethod
     def _multiply_matrices[Field](cls, left: ConcreteMatrix[Field], right:

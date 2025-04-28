@@ -83,14 +83,18 @@ class AbstractMatrix[Field](ABC):
         pass
 
     @abstractmethod
-    def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
-    | None = None) -> Self:
+    def permutation(self, src_indices: Iterable[int]) -> Self:
         """ Get the matrix that is the result of permuting the (q-dimensional)
-            sub-Hilbert spaces. Every entry in src_indices and dst_indices
-            indicates an index of a sub-Hilbert space from the input/output of
-            the original matrix, -1 indices that a new sub-Hilbert space is
-            added, with the identity operator acting on it. If dst_indices is
-            None, it is set to the same value as src_indices """
+            sub-Hilbert spaces. Every entry in src_indices indicates an index of
+            a sub-Hilbert space from the original matrix, -1 indicates that a
+            new sub-Hilbert space is added, with the identity operator acting on
+            it. This method throws a RuntimeError if the matrix is not square
+            """
+        pass
+
+    @abstractmethod
+    def copy(self) -> Self:
+        """ Create a copy of the matrix and return this copy """
         pass
 
 
@@ -228,40 +232,48 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         return exact_log(self.shape[0]), exact_log(self.shape[1])
 
     def copy(self) -> ConcreteMatrix[Field]:
-        """ Returns a copy of the matrix """
         return ConcreteMatrix(self._index, self._values)
 
     def value(self) -> ConcreteMatrix[Field]:
         return self.copy()
 
-    def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
-    | None = None) -> Self:
+    def permutation(self, src_indices: Iterable[int]) -> Self:
         src_indices = list(src_indices)
-        dst_indices = src_indices if dst_indices is None else list(dst_indices)
         log_shape = self.log_shape
-        if not all(-1 <= i < log_shape[0] for i in dst_indices):
-            raise ValueError(f"dst_indices not in range [-1, {log_shape[0]})")
-        if not all(-1 <= i < log_shape[1] for i in src_indices):
-            raise ValueError(f"src_indices not in range [-1, {log_shape[1]})")
+        if log_shape[0] != log_shape[1]:
+            raise RuntimeError("Permutation can only be applied on square"
+            "matrices")
+        log_dim = self.log_shape[0]
+        if not all(-1 <= i < log_dim for i in src_indices):
+            raise ValueError(f"src_indices not in range [-1, {log_dim})")
         q = self._index.q
-        shape: tuple[int, int] = (q ** len(dst_indices), q ** len(src_indices))
-        def get_index(indices: list[int], index: int):
+        output_dim: int = q ** len(src_indices)
+        q_powers, qpow = [], 1
+        for _ in range(log_dim):
+            q_powers.append(qpow)
+            qpow *= q
+        q_powers.reverse()
+        def get_index(index: int) -> tuple[int, int]:
+            """ Returns a tuple (source index, identity index) """
+            tot, id_index = 0, 0
             powers = []
-            for _ in indices:
+            for _ in src_indices:
                 powers.append(index % q)
                 index //= q
-            p = 1
-            tot = 0
-            for target_index in indices:
+            powers.reverse()
+            for i, target_index in enumerate(src_indices):
+                cur_index = powers[i]
                 if target_index == -1:
-                    continue
-                tot += p * powers[target_index]
-                p *= q
-            return tot
-        out = ConcreteMatrix.zeros(self._index, shape)
-        for i, j in product(range(shape[0]), range(shape[1])):
-            di, dj = get_index(dst_indices, i), get_index(src_indices, j)
-            out[i, j] = self[di, dj]
+                    id_index *= q
+                    id_index += cur_index
+                else:
+                    tot += q_powers[target_index] * cur_index
+            return tot, id_index
+        out = ConcreteMatrix.zeros(self._index, (output_dim, output_dim))
+        for i, j in product(range(output_dim), range(output_dim)):
+            (di, die), (dj, dje) = get_index(i), get_index(j)
+            if die == dje:
+                out[i, j] = self[di, dj]
         return out
 
     @classmethod

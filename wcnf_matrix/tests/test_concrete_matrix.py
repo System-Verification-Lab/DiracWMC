@@ -43,3 +43,19 @@ def test_permutation_4():
     T = Index()
     M = ConcreteMatrix(T, [[1], [5], [4], [3]])
     assert M.permutation([], [1, 0]) == ConcreteMatrix(T, [[1], [4], [5], [3]])
+
+def test_permutation_id():
+    T = Index()
+    M = ConcreteMatrix(T, [[2, 2], [2, 2]])
+    assert M.permutation([-1, 0]) == ConcreteMatrix(T, [
+        [2, 0, 2, 0],
+        [0, 2, 0, 2],
+        [2, 0, 2, 0],
+        [0, 2, 0, 2],
+    ])
+    assert M.permutation([0, -1]) == ConcreteMatrix(T, [
+        [2, 2, 0, 0],
+        [2, 2, 0, 0],
+        [0, 0, 2, 2],
+        [0, 0, 2, 2],
+    ])

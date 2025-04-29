@@ -1,8 +1,9 @@
 
 from __future__ import annotations
-from .abstractmatrix import AbstractMatrix, ConcreteMatrix
-from ..reg import Reg
 from typing import Iterable, Self, Iterator
+from .abstractmatrix import AbstractMatrix
+from .concretematrix import ConcreteMatrix
+from ..reg import Reg
 
 class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
     """ A matrix with annotated input and output dimensions. Annotations happen

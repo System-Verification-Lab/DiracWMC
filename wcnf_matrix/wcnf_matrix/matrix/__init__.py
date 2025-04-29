@@ -1,5 +1,5 @@
 
-from .abstractmatrix import ConcreteMatrix
+from .concretematrix import ConcreteMatrix
 from .labelmatrix import LabelMatrix
 Matrix = ConcreteMatrix
 

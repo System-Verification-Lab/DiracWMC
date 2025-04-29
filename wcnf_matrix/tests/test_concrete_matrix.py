@@ -47,13 +47,13 @@ def test_permutation_4():
 def test_permutation_id():
     T = Index()
     M = ConcreteMatrix(T, [[2, 2], [2, 2]])
-    assert M.permutation([-1, 0]) == ConcreteMatrix(T, [
+    assert M.permutation([0, -1]) == ConcreteMatrix(T, [
         [2, 0, 2, 0],
         [0, 2, 0, 2],
         [2, 0, 2, 0],
         [0, 2, 0, 2],
     ])
-    assert M.permutation([0, -1]) == ConcreteMatrix(T, [
+    assert M.permutation([-1, 0]) == ConcreteMatrix(T, [
         [2, 2, 0, 0],
         [2, 2, 0, 0],
         [0, 0, 2, 2],

@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Self, Any, Iterable, TYPE_CHECKING
 from ..index import Index, IndexBasisElement
-# To prevent circular imports on runtime:
+# To prevent circular imports at runtime:
 if TYPE_CHECKING:
     from .concretematrix import ConcreteMatrix
 
@@ -84,13 +84,20 @@ class AbstractMatrix[Field](ABC):
         pass
 
     @abstractmethod
-    def permutation(self, src_indices: Iterable[int]) -> Self:
-        """ Get the matrix that is the result of permuting the (q-dimensional)
-            Hilbert subspaces. Every entry in src_indices indicates an index of
-            a Hilbert subspace from the original matrix, -1 indicates that a
-            new Hilbert subspace is added, with the identity operator acting on
-            it. This method throws a RuntimeError if the matrix is not square
-            """
+    def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
+    | None = None) -> Self:
+        """ Permute the input and output Hilbert subspaces given by the
+            permutations src_indices and dst_indices respectively. Each is an
+            iterable over indices from the original Hilbert subspaces. The
+            matrix dimensions should be powers of q, otherwise a RuntimeError
+            is thrown. If dst_indices is not given, it is set to be equal to
+            src_indices. If any of the values from src_indices or dst_indices
+            are out of range, a ValueError is thrown.
+             
+            In addition to indices of the original Hilbert subspaces, -1 can be
+            used for a new Hilbert subspace with the identity operator acting on
+            it. The number of -1 entries in src_indices and dst_indices should
+            be the same. A ValueError is thrown if this is not the case """
         pass
 
     @abstractmethod

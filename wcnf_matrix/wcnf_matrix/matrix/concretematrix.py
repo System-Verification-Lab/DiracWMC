@@ -144,44 +144,50 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
     def value(self) -> ConcreteMatrix[Field]:
         return self.copy()
 
-    def permutation(self, src_indices: Iterable[int]) -> Self:
+    def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
+    | None = None) -> Self:
         src_indices = list(src_indices)
+        dst_indices = src_indices if dst_indices is None else list(dst_indices)
         log_shape = self.log_shape
-        if log_shape[0] != log_shape[1]:
-            raise RuntimeError("Permutation can only be applied on square"
-            "matrices")
-        log_dim = self.log_shape[0]
-        if not all(-1 <= i < log_dim for i in src_indices):
-            raise ValueError(f"src_indices not in range [-1, {log_dim})")
+        if not all(-1 <= i < log_shape[0] for i in dst_indices):
+            raise ValueError(f"dst_indices not in range [-1, {log_shape[0]})")
+        if not all(-1 <= i < log_shape[1] for i in src_indices):
+            raise ValueError(f"src_indices not in range [-1, {log_shape[1]})")
+        if sum(i == -1 for i in src_indices) != sum(i == -1 for i in
+        dst_indices):
+            raise ValueError("Number of entries equal to -1 between "
+            "src_indices and dst_indices is not equal")
         q = self._index.q
-        output_dim: int = q ** len(src_indices)
-        q_powers, qpow = [], 1
-        for _ in range(log_dim):
-            q_powers.append(qpow)
-            qpow *= q
-        q_powers.reverse()
-        def get_index(index: int) -> tuple[int, int]:
-            """ Returns a tuple (source index, identity index) """
-            tot, id_index = 0, 0
-            powers = []
-            for _ in src_indices:
-                powers.append(index % q)
-                index //= q
-            powers.reverse()
-            for i, target_index in enumerate(src_indices):
-                cur_index = powers[i]
-                if target_index == -1:
-                    id_index *= q
-                    id_index += cur_index
-                else:
-                    tot += q_powers[target_index] * cur_index
-            return tot, id_index
-        out = ConcreteMatrix.zeros(self._index, (output_dim, output_dim))
-        for i, j in product(range(output_dim), range(output_dim)):
-            (di, die), (dj, dje) = get_index(i), get_index(j)
-            if die == dje:
-                out[i, j] = self[di, dj]
+        output_shape: tuple[int, int] = (q ** len(dst_indices), q **
+        len(src_indices))
+        out = ConcreteMatrix.zeros(self._index, output_shape)
+        for i, j in product(range(output_shape[0]), range(output_shape[1])):
+            ti, idi = self._permutation_index(dst_indices, i, log_shape[0], q)
+            tj, idj = self._permutation_index(src_indices, j, log_shape[1], q)
+            if idi == idj:
+                out[i, j] = self[ti, tj]
         return out
+
+    def _permutation_index(self, indices: list[int], target_index: int, log_dim:
+    int, q: int) -> tuple[int, int]:
+        """ Given some permutation, get the source index and identity matrix
+            index as a tuple, from the target index in the matrix resulting from
+            the permutation function. Parameters are the source indices from the
+            original matrix, the target index in the new matrix, the log shape
+            of the original matrix, and the base Hilbert space dimension q """
+        tot, id_index = 0, 0
+        powers = []
+        for _ in indices:
+            powers.append(target_index % q)
+            target_index //= q
+        powers.reverse()
+        for p, index in zip(powers, indices):
+            if index == -1:
+                id_index *= q
+                id_index += p
+            else:
+                tot += p * q ** (log_dim - index - 1)
+        return tot, id_index
 
     @classmethod
     def _multiply_matrices[Field](cls, left: ConcreteMatrix[Field], right:

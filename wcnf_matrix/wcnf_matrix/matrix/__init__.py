@@ -5,6 +5,7 @@ from .labelmatrix import LabelMatrix
 from typing import overload
 
 type Matrix[Field] = ConcreteMatrix[Field]
+Matrix = ConcreteMatrix
 
 bra = Matrix.bra
 ket = Matrix.ket

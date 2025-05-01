@@ -16,7 +16,10 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
 
     def __str__(self) -> str:
         """ String representation of the matrix """
-        return "[ " + ", ".join(str(row) for row in self._values) + " ]"
+        entries = [[str(cell) for cell in row] for row in self._values]
+        max_len = max(max(len(cell) for cell in row) for row in entries)
+        return "[ " + "\n  ".join("  ".join(cell.rjust(max_len) for cell in row)
+        for row in entries) + " ]"
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):

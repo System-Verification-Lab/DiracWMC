@@ -1,6 +1,6 @@
 
 from __future__ import annotations
-from typing import Iterable, Self, Iterator
+from typing import Iterable, Self, Iterator, Any
 from .abstractmatrix import AbstractMatrix
 from .concretematrix import ConcreteMatrix
 from ..reg import Reg
@@ -30,8 +30,8 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
     def __str__(self) -> str:
         """ String representation of a label matrix is given as (matrix, labels)
             """
-        return f"({self.mat}, [" + ", ".join(str(label) for label in
-        self.labels) + "])"
+        return f"{self.mat} | (" + ", ".join(str(label) for label in
+        self.labels) + ")"
 
     def __mul__(self, other: LabelMatrix[Field, MatrixType] | Field) -> Self:
         """ Multiply one label matrix with another, or multiply this label
@@ -53,6 +53,16 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
         left, right = self.__class__._make_compatible(self, other)
         return LabelMatrix(left.mat + right.mat, right.labels)
 
+    def __eq__(self, other: Any) -> bool:
+        """ Check if this LabelMatrix is equal to another object, which will
+            only return True if the other object is also a LabelMatrix. In this
+            case the labels of the matrices are reordered and possibly extended
+            before the matrices are compared """
+        if not isinstance(other, LabelMatrix):
+            return False
+        left, right = LabelMatrix._make_compatible(self, other)
+        return left.mat == right.mat
+
     def copy(self) -> Self:
         """ Create a copy of this label matrix """
         return LabelMatrix(self.mat.copy(), self.src_labels, self.dst_labels)
@@ -62,17 +72,7 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
             memory. Returns this new matrix, which still has labels """
         return LabelMatrix(self.mat.value(), self.labels)
 
-    @classmethod
-    def _make_compatible[Field, MatrixType: AbstractMatrix[Field]](cls,
-    *matrices: LabelMatrix[Field, MatrixType]) -> Iterator[LabelMatrix[Field,
-    MatrixType]]:
-        """ Make one or more matrices compatible with each other by lining up
-            Hilbert subspaces with the same label. Returns the compatible
-            matrices """
-        labels = set(sum([mat.labels for mat in matrices], []))
-        return (mat._permutation(labels) for mat in matrices)
-    
-    def _permutation(self, labels: Iterable[Reg]) -> Self:
+    def permutation(self, labels: Iterable[Reg]) -> Self:
         """ Permute the Hilbert subspaces to the given sequence of labels. If a
             label is not present on this matrix, an identity operator will be
             permormed on this Hilbert subspace. This method accounts for square
@@ -87,6 +87,16 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
         else:
             mat = self.mat.permutation(indices)
         return LabelMatrix(mat, labels)
+
+    @classmethod
+    def _make_compatible[Field, MatrixType: AbstractMatrix[Field]](cls,
+    *matrices: LabelMatrix[Field, MatrixType]) -> Iterator[LabelMatrix[Field,
+    MatrixType]]:
+        """ Make one or more matrices compatible with each other by lining up
+            Hilbert subspaces with the same label. Returns the compatible
+            matrices """
+        labels = set(sum([mat.labels for mat in matrices], []))
+        return (mat.permutation(labels) for mat in matrices)
     
     def _is_row_vector(self) -> bool:
         """ Check if the matrix stored in this label matrix is a row vector """

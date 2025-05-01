@@ -3,9 +3,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Self, Any, Iterable, TYPE_CHECKING
 from ..index import Index, IndexBasisElement
+from ..reg import Reg
 # To prevent circular imports at runtime:
 if TYPE_CHECKING:
     from .concretematrix import ConcreteMatrix
+    from .labelmatrix import LabelMatrix
 
 class AbstractMatrix[Field](ABC):
     """ Abstract definition of a matrix, with operations for creating bras and
@@ -38,10 +40,23 @@ class AbstractMatrix[Field](ABC):
         """ Return the Kronecker product of this matrix and another """
         return self.__class__.kron(self, other)
 
+    def __or__(self, other: Reg | Iterable[Reg]) -> LabelMatrix[Field, Self]:
+        """ Alias of the label member function, which creates a LabelMatrix
+            from this matrix. The original matrix is not modified """
+        if isinstance(other, Reg):
+            return self.label((other,))
+        return self.label(other)
+
     @abstractmethod
     def __eq__(self, other: Any) -> bool:
         """ Returns if this matrix is equal to another object. Comparing to any
             non-matrix object returns False """
+        pass
+
+    @property
+    @abstractmethod
+    def shape(self) -> tuple[int, int]:
+        """ The dimensions of the matrix as a tuple (rows, columns) """
         pass
 
     @classmethod
@@ -104,4 +119,13 @@ class AbstractMatrix[Field](ABC):
     def copy(self) -> Self:
         """ Create a copy of the matrix and return this copy """
         pass
+
+    def label(self, labels: Iterable[Reg]) -> LabelMatrix[Field, Self]:
+        """ Create a LabelMatrix from this matrix using the given annotation.
+            The iterator should yield a number of elements n, such that this
+            matrix has dimensions q ** n. One of the dimensions (but not both!)
+            can be 1, meaning the matrix is a row or column vector. The new
+            LabelMatrix is returned, leaving the original matrix unmodified """
+        from .labelmatrix import LabelMatrix
+        return LabelMatrix(self.copy(), labels)
 

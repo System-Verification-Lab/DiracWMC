@@ -12,10 +12,20 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
     def __init__(self, mat: MatrixType, labels: Iterable[Reg]):
         """ Constructor, matrix to annotate and the annotations of the
             Hilbert subspaces (columns and rows respectively). The dimensions
-            of the matrix need to be q ** len(labels), hence the matrix also
-            needs to be square """
+            of the matrix need to be q ** len(labels). Optionally one of the
+            dimensions can be 1, so that the matrix is either a row or column
+            vector, or a square matrix """
         self.mat = mat
-        self.labels = list(labels)
+        if not self._can_be_labelled(mat):
+            raise ValueError(f"Matrix with shape {mat.shape} and base q = "
+            f"{mat._index.q} cannot be labelled")
+        labels = list(labels)
+        labels_length = max(self._exact_log(self.mat.shape[i], self.mat._index.q
+        ) for i in (0, 1))
+        if len(labels) != labels_length:
+            raise ValueError(f"Number of labels provided {len(labels)} "
+            f"does not match required amount {labels_length}")
+        self.labels = labels
 
     def __str__(self) -> str:
         """ String representation of a label matrix is given as (matrix, labels)
@@ -65,9 +75,50 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
     def _permutation(self, labels: Iterable[Reg]) -> Self:
         """ Permute the Hilbert subspaces to the given sequence of labels. If a
             label is not present on this matrix, an identity operator will be
-            permormed on this Hilbert subspace """
+            permormed on this Hilbert subspace. This method accounts for square
+            matrices, row vectors, and column vectors separately """
         labels = list(labels)
         src_labels = {label: i for i, label in enumerate(self.labels)}
-        mat = self.mat.permutation(src_labels.get(label, -1) for label in
-        labels)
+        indices = [src_labels.get(label, -1) for label in labels]
+        if self._is_row_vector():
+            mat = self.mat.permutation(indices, [])
+        elif self._is_column_vector():
+            mat = self.mat.permutation([], indices)
+        else:
+            mat = self.mat.permutation(indices)
         return LabelMatrix(mat, labels)
+    
+    def _is_row_vector(self) -> bool:
+        """ Check if the matrix stored in this label matrix is a row vector """
+        return self.mat.shape[0] == 1
+
+    def _is_column_vector(self) -> bool:
+        """ Check if the matrix stored in this label matrix is a column vector
+            """
+        return self.mat.shape[1] == 1
+
+    def _can_be_labelled(self, mat: MatrixType) -> bool:
+        """ Check if the given matrix is square or a row/column vector, and has
+            compatible dimensions """
+        q = mat._index.q
+        try:
+            log_shape = self._exact_log(mat.shape[0], q), self._exact_log(
+            mat.shape[1], q)
+        except:
+            return False
+        # Square matrix
+        if log_shape[0] != 0 and log_shape[1] != 0:
+            return log_shape[0] == log_shape[1]
+        # Row/column vector
+        return True
+    
+    def _exact_log(self, val: int, q: int) -> int:
+        """ Determine the log base q of a value. If the value is not a power of
+            q, this throws a ValueError """
+        out = 0
+        while val > 1:
+            if val % q != 0:
+                raise ValueError(f"Value {val} is not a power of q = {q}")
+            val //= q
+            out += 1
+        return out

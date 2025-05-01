@@ -1,7 +1,7 @@
 
 from .concretematrix import ConcreteMatrix
+from .concretematrix import ConcreteMatrix as Matrix
 from .labelmatrix import LabelMatrix
-Matrix = ConcreteMatrix
 
 bra = Matrix.bra
 ket = Matrix.ket

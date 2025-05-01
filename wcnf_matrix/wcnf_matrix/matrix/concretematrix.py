@@ -120,7 +120,6 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
 
     @property
     def shape(self) -> tuple[int, int]:
-        """ The shape of the matrix as a tuple (rows, columns) """
         return (len(self._values), len(self._values[0]))
     
     @property

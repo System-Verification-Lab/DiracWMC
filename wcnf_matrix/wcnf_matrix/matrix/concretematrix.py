@@ -125,21 +125,6 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
     def shape(self) -> tuple[int, int]:
         return (len(self._values), len(self._values[0]))
     
-    @property
-    def log_shape(self) -> tuple[int, int]:
-        """ The shape of the matrix log base q. If these values are not both
-            integers, a RuntimeError is thrown """
-        q = self._index.q
-        def exact_log(val: int) -> int:
-            out = 0
-            while val > 1:
-                if val % q != 0:
-                    raise RuntimeError("Log of matrix shape is not exact")
-                val //= q
-                out += 1
-            return out
-        return exact_log(self.shape[0]), exact_log(self.shape[1])
-
     def copy(self) -> ConcreteMatrix[Field]:
         return ConcreteMatrix(self._index, self._values)
 

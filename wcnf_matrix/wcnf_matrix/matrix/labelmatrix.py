@@ -41,7 +41,16 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
             out.mat *= other
             return out
         left, right = self.__class__._make_compatible(self, other)
-        return LabelMatrix(left.mat * right.mat, left.labels)
+        mat = left.mat * right.mat
+        # An exception is made for 
+        if mat.shape == (1, 1):
+            return LabelMatrix(mat, [])
+        if (mat.shape[0] != 1 and mat.shape[1] != 1 and mat.shape[0] !=
+        mat.shape[1]):
+            raise ValueError("Multiplication of two Labelmatrix objects cannot "
+            "result in matrix that is not square, a row vector, or a column "
+            "vector")
+        return LabelMatrix(mat, left.labels)
 
     def __rmul__(self, other: Field) -> Self:
         """ Multiply this label matrix with a scalar on the left, and return the

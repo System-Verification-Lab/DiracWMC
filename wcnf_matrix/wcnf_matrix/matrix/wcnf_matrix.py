@@ -39,6 +39,11 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
             return False
         return self.value() == other.value()
 
+    def __str__(self) -> str:
+        """ String representation of the matrix for debugging """
+        return (f"{self.__class__.__name__}({self._index}, {self._cnf}, "
+        f"{self._weight_func}, {self._input_vars}, {self._output_vars})")
+
     @property
     def shape(self) -> tuple[int, int]:
         q = self._index.q
@@ -129,7 +134,29 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
 
     def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
     | None = None) -> Self:
-        ...
+        src_indices = list(src_indices)
+        dst_indices = src_indices if dst_indices is None else list(dst_indices)
+        log_shape = self.log_shape
+        if not all(-1 <= i < log_shape[0] for i in dst_indices):
+            raise ValueError(f"dst_indices not in range [-1, {log_shape[0]})")
+        if not all(-1 <= i < log_shape[1] for i in src_indices):
+            raise ValueError(f"src_indices not in range [-1, {log_shape[1]})")
+        if sum(i == -1 for i in src_indices) != sum(i == -1 for i in
+        dst_indices):
+            raise ValueError("Number of entries equal to -1 between "
+            "src_indices and dst_indices is not equal")
+        new_dims = sum(i == -1 for i in src_indices)
+        matrix = self.copy()
+        extra_vars = [BoolVar() for _ in range(new_dims * matrix._log_q)]
+        matrix._input_vars = matrix._permute_vars(matrix._input_vars,
+        extra_vars, src_indices)
+        matrix._output_vars = matrix._permute_vars(matrix._output_vars,
+        extra_vars, dst_indices)
+        extra_weights = WeightFunction(extra_vars)
+        extra_weights.fill(1.0)
+        matrix._weight_func = matrix._weight_func * extra_weights
+        print(matrix)
+        return matrix
 
     def copy(self) -> Self:
         matrix = WCNFMatrix(self.index, self._cnf.copy(),
@@ -140,6 +167,7 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
     def replace_vars(self):
         """ Replace all variables in this WCNFMatrix object with newly
             initialized ones """
+        print(self.domain, self._input_vars, self._output_vars)
         mapping = {var: BoolVar() for var in self.domain}
         self._cnf.bulk_subst(mapping)
         self._weight_func.bulk_subst(mapping)
@@ -231,3 +259,19 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
                 cnf.add_clause([var if elt & 1 else -var])
                 elt >>= 1
         return self._weight_func(cnf)
+    
+    def _permute_vars(self, src_vars: list[BoolVar], extra_vars: list[BoolVar],
+    src_indices: list[int]) -> list[BoolVar]:
+        """ Returns a permutation of the variables from src_vars when they are
+            divided into blocks of size log_q. If a source index is -1 a block
+            of vars is taken from extra_vars """
+        extra_index = 0
+        result_vars: list[BoolVar] = []
+        for src_index in src_indices:
+            if src_index == -1:
+                result_vars += extra_vars[extra_index:extra_index + self._log_q]
+                extra_index += self._log_q
+            else:
+                start_index = self._log_q * src_index
+                result_vars += src_vars[start_index:start_index + self._log_q]
+        return result_vars

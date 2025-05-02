@@ -128,4 +128,9 @@ class AbstractMatrix[Field](ABC):
             LabelMatrix is returned, leaving the original matrix unmodified """
         from .labelmatrix import LabelMatrix
         return LabelMatrix(self.copy(), labels)
+    
+    @property
+    def index(self) -> Index[Field]:
+        """ The index (Hilbert space) of the matrix """
+        return self._index
 

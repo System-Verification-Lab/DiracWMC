@@ -18,10 +18,10 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
         self.mat = mat
         if not self._can_be_labelled(mat):
             raise ValueError(f"Matrix with shape {mat.shape} and base q = "
-            f"{mat._index.q} cannot be labelled")
+            f"{mat.index.q} cannot be labelled")
         labels = list(labels)
-        labels_length = max(self._exact_log(self.mat.shape[i], self.mat._index.q
-        ) for i in (0, 1))
+        labels_length = max(self._exact_log(self.mat.shape[i], self.mat.index.q)
+        for i in (0, 1))
         if len(labels) != labels_length:
             raise ValueError(f"Number of labels provided {len(labels)} "
             f"does not match required amount {labels_length}")
@@ -110,7 +110,7 @@ class LabelMatrix[Field, MatrixType: AbstractMatrix[Field]]:
     def _can_be_labelled(self, mat: MatrixType) -> bool:
         """ Check if the given matrix is square or a row/column vector, and has
             compatible dimensions """
-        q = mat._index.q
+        q = mat.index.q
         try:
             log_shape = self._exact_log(mat.shape[0], q), self._exact_log(
             mat.shape[1], q)

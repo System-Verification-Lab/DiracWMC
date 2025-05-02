@@ -126,7 +126,20 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
 
     @classmethod
     def kron[Field](cls, *elements: WCNFMatrix[Field]) -> WCNFMatrix[Field]:
-        ...
+        if len(elements) == 0:
+            raise ValueError("Cannot determine kronecker product of zero "
+            "matrices")
+        if not all(elt.index == elements[0].index for elt in elements):
+            raise ValueError("Cannot calculate kronecker product of matrices "
+            "with different index")
+        elements = [elt.copy() for elt in elements]
+        return WCNFMatrix(
+            elements[0].index,
+            reduce(lambda x, y: x & y, (elt._cnf for elt in elements)),
+            reduce(lambda x, y: x * y, (elt._weight_func for elt in elements)),
+            sum((elt._input_vars for elt in elements), []),
+            sum((elt._output_vars for elt in elements), []),
+        )
 
     def value(self) -> ConcreteMatrix[Field]:
         return ConcreteMatrix(self._index, [[self._value_at(row, col) for col in
@@ -155,7 +168,6 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         extra_weights = WeightFunction(extra_vars)
         extra_weights.fill(1.0)
         matrix._weight_func = matrix._weight_func * extra_weights
-        print(matrix)
         return matrix
 
     def copy(self) -> Self:
@@ -167,7 +179,6 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
     def replace_vars(self):
         """ Replace all variables in this WCNFMatrix object with newly
             initialized ones """
-        print(self.domain, self._input_vars, self._output_vars)
         mapping = {var: BoolVar() for var in self.domain}
         self._cnf.bulk_subst(mapping)
         self._weight_func.bulk_subst(mapping)

@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 from functools import reduce
+from itertools import product
 from typing import Iterable, Any, Self, Mapping
 from .abstractmatrix import AbstractMatrix
 from .concretematrix import ConcreteMatrix
@@ -93,7 +94,49 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
     @classmethod
     def linear_comb[Field](cls, *elements: tuple[Field, WCNFMatrix[Field]] |
     WCNFMatrix[Field]) -> WCNFMatrix[Field]:
-        ...
+        if len(elements) == 0:
+            raise ValueError("Cannot determine linear combination of zero "
+            "matrices")
+        true_elements = [(1, elt.copy()) if isinstance(elt, WCNFMatrix) else
+        (elt[0], elt[1].copy()) for elt in elements]
+        index = true_elements[0][1].index
+        if not all(elt[1].index == index for elt in true_elements):
+            raise ValueError(f"Cannot add matrices with different index")
+        if not all(elt[1].shape == true_elements[0][1].shape for elt in
+        true_elements):
+            raise ValueError(f"Cannot add matrices with different shapes: "
+            f"{tuple(elt[1].shape for elt in true_elements)}")
+        condition_vars = [BoolVar() for _ in true_elements]
+        input_vars = [BoolVar() for _ in true_elements[0][1]._input_vars]
+        output_vars = [BoolVar() for _ in true_elements[0][1]._output_vars]
+        condition_cnf = CNF()
+        for cv, elt in zip(condition_vars, true_elements):
+            for v1, v2 in zip(input_vars, elt[1]._input_vars):
+                condition_cnf.add_clause([-cv, v1, -v2], [-cv, -v1, v2])
+            for v1, v2 in zip(output_vars, elt[1]._output_vars):
+                condition_cnf.add_clause([-cv, v1, -v2], [-cv, -v1, v2])
+        one_cv = CNF()
+        one_cv.add_clause(condition_vars)
+        for cv1, cv2 in product(condition_vars, repeat=2):
+            if cv1 <= cv2:
+                continue
+            one_cv.add_clause([-cv1, -cv2])
+        cnf = reduce(lambda x, y: x & y, (elt[1]._cnf | CNF([[-cv]]) for elt, cv
+        in zip(true_elements, condition_vars))) & one_cv & condition_cnf
+        extra_weights = WeightFunction(condition_vars + input_vars +
+        output_vars)
+        extra_weights.fill(1.0)
+        for elt, cv in zip(true_elements, condition_vars):
+            extra_weights[cv, False] = 1 / elt[1]._weight_func.total_weight()
+            extra_weights[cv, True] = elt[0]
+        return WCNFMatrix(
+            index,
+            cnf,
+            extra_weights * reduce(lambda x, y: x * y, (elt[1]._weight_func for
+            elt in true_elements)),
+            input_vars,
+            output_vars
+        )
 
     @classmethod
     def product[Field](cls, *elements: WCNFMatrix[Field]) -> WCNFMatrix[Field]:

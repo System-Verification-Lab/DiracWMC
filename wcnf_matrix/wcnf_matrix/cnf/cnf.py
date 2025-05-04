@@ -1,6 +1,6 @@
 
 from typing import Iterable, Mapping, Any, Iterator
-from itertools import chain
+from itertools import chain, product
 from .boolvar import BoolVar, SignedBoolVar
 
 class CNF:
@@ -38,6 +38,12 @@ class CNF:
         """ Returns the conjunction of two CNF formulae """
         return CNF(chain(self._clauses, other._clauses))
     
+    def __or__(self, other: "CNF") -> "CNF":
+        """ Returns the disjunction of two CNF formulae. The number clauses will
+            be the product of the number of clauses in the two separate formulae
+            """
+        return CNF(a + b for a, b in product(self._clauses, other._clauses))
+
     def __add__(self, other: "CNF") -> "CNF":
         """ Returns the conjunction of two CNF formulae """
         return CNF(chain(self._clauses, other._clauses))

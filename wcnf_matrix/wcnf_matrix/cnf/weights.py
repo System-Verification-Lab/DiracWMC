@@ -233,6 +233,14 @@ class WeightFunction:
         return sum(self._mapping_weight(mapping) for mapping in
         self._var_mappings() if cnf(mapping))
 
+    def total_weight(self) -> float:
+        """ Get the total weight (sum) for all combinations of values for the
+            variables in the domain of this weight function, without taking a
+            boolean formula into account that restricts the values. Assumes none
+            of the values are None """
+        return reduce(lambda x, y: x * y, (self.get_weight(v, False) +
+        self.get_weight(v, True) for v in self._domain))
+
     @property
     def domain(self) -> set[BoolVar]:
         """ The domain of the weight function as a tuple of variables """

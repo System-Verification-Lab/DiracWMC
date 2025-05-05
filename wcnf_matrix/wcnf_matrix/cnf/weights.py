@@ -230,8 +230,11 @@ class WeightFunction:
     def model_count(self, cnf: CNF) -> float:
         """ The weighted model count of the given formula with respect to this
             weight function. Calculated using brute force """
-        return sum(self._mapping_weight(mapping) for mapping in
-        self._var_mappings() if cnf(mapping))
+        from . import DPMC
+        result =  DPMC().model_count(cnf, self)
+        if not result.success:
+            raise RuntimeError("DPMC solver failed to execute")
+        return result.model_count
 
     def total_weight(self) -> float:
         """ Get the total weight (sum) for all combinations of values for the

@@ -86,3 +86,8 @@ class CNF:
     def clauses(self) -> Iterator[Iterable[SignedBoolVar]]:
         """ Iterate over all of the clauses of this CNF formula """
         yield from self._clauses
+
+    @property
+    def num_clauses(self) -> int:
+        """ Get the number of clauses of this formula """
+        return len(self._clauses)

@@ -2,11 +2,9 @@
 from .abstractmatrix import AbstractMatrix
 from .concretematrix import ConcreteMatrix
 from .wcnf_matrix import WCNFMatrix
+from .wcnf_matrix import WCNFMatrix as Matrix
 from .labelmatrix import LabelMatrix
 from typing import overload
-
-type Matrix[Field] = WCNFMatrix[Field]
-Matrix = WCNFMatrix
 
 bra = Matrix.bra
 ket = Matrix.ket

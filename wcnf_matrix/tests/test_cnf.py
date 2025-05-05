@@ -1,6 +1,5 @@
 
-from ..cnf import CNF
-from ..boolvar import BoolVar
+from wcnf_matrix import CNF, BoolVar
 
 def test_add():
     x, y, z, w = BoolVar(), BoolVar(), BoolVar(), BoolVar()

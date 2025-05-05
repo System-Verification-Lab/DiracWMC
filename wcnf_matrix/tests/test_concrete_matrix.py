@@ -1,9 +1,10 @@
 
-from wcnf_matrix import Index, ConcreteMatrix, bra, ket
+from wcnf_matrix import Index, ConcreteMatrix
 
 def test_bra_ket_mul():
     T = Index()
-    assert ConcreteMatrix(T, [[0, 1], [0, 0]]) == ket(T[0]) * bra(T[1])
+    assert ConcreteMatrix(T, [[0, 1], [0, 0]]) == (ConcreteMatrix.ket(T[0]) *
+    ConcreteMatrix.bra(T[1]))
 
 def test_neq_different_index():
     T1, T2 = Index(), Index()

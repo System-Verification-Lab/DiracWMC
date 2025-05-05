@@ -1,7 +1,6 @@
 
 from pytest import approx
-from ..boolvar import BoolVar
-from ..weights import WeightFunction
+from wcnf_matrix import BoolVar, WeightFunction
 
 def test_combine_domains():
     x, y = BoolVar(), BoolVar()

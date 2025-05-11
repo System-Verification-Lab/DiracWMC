@@ -22,7 +22,7 @@ The solver can be downloaded into the current directory as follows:
 git clone --recursive https://github.com/vardigroup/DPMC
 cd DPMC
 ```
-After this a planner and executor need to be built. Build the LG planner using the following:
+After this a planner and executor need to be built. First edit the `lg/src/util/graded_clauses.h` file to have an `#include <cstdint>` line at the top of the file. Build the LG planner using the following:
 ```bash
 cd lg
 make
@@ -32,6 +32,10 @@ For the LG planner to work, a solver needs to be build. While still in the `lg` 
 cd solvers/flow-cutter-pace17
 make
 ```
+Now edit the files:
+- `addmc/libraries/cryptominisat/src/ccnr.cpp`
+- `addmc/libraries/cryptominisat/src/ccnr.h`
+to have `#include <cstdint>` at the top
 Now navigate back the the DPMC directory. Then build the DMC executor from its designated folder:
 ```bash
 cd ../../../dmc

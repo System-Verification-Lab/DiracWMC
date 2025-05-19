@@ -38,7 +38,7 @@ def install_dpmc():
     "flow-cutter-pace17"))
     add_include_to_file(os.path.join(solver_dir, "addmc", "libraries", "cryptominisat", "src", "ccnr.cpp"), "#include <cstdint>")
     add_include_to_file(os.path.join(solver_dir, "addmc", "libraries", "cryptominisat", "src", "ccnr.h"), "#include <cstdint>")
-    check_call(["make", "dmc"], cwd=solver_dir)
+    check_call(["make", "dmc"], cwd=os.path.join(solver_dir, "dmc"))
 
 check_os()
 install_dpmc()

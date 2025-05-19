@@ -8,7 +8,7 @@ from ..cnf import CNF
 from ..weights import WeightFunction
 from .formats import format_dpmc
 
-src_folder = os.path.join(os.getcwd(), "solvers", "DPMC")
+src_folder = os.path.join(os.path.dirname(__file__), "..", "..", "solvers", "DPMC")
 
 class DPMC(ModelCounter):
     """ Interface to the DPMC model counter, which needs to be installed under

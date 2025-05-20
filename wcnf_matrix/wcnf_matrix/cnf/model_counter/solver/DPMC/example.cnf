@@ -1,0 +1,7 @@
+c This is a simple example
+
+p cnf 2 2
+c p weight 1 0.5
+c p weight 2 0.2
+1 2 0
+1 2 0

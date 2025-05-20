@@ -1,4 +1,5 @@
 
+from __future__ import annotations
 from typing import Iterable, Iterator, Mapping, Callable
 from itertools import chain, product
 from functools import reduce
@@ -231,7 +232,7 @@ class WeightFunction:
         """ The weighted model count of the given formula with respect to this
             weight function. Calculated using brute force """
         from . import DPMC
-        result =  DPMC().model_count(cnf, self)
+        result = DPMC().model_count(cnf, self)
         if not result.success:
             raise RuntimeError("DPMC solver failed to execute")
         return result.model_count
@@ -248,6 +249,18 @@ class WeightFunction:
     def domain(self) -> set[BoolVar]:
         """ The domain of the weight function as a tuple of variables """
         return self._domain
+
+    @classmethod
+    def batch_model_count(cls, *problems: tuple[CNF, WeightFunction]) -> (
+    Iterator[float]):
+        """ Get the model count of a collection of problems. Returns an iterator
+            over the results """
+        from . import DPMC
+        results = DPMC().batch_model_count(*problems)
+        for result in results:
+            if not result.success:
+                raise RuntimeError("DPMC solver failed to execute")
+            yield result.model_count
 
     def _var_mappings(self) -> Iterator[Mapping[BoolVar, bool]]:
         """ Get an iterator over all possible variable assignment mappings given

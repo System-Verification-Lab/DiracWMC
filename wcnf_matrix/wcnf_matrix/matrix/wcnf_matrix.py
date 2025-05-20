@@ -185,8 +185,15 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         )
 
     def value(self) -> ConcreteMatrix[Field]:
-        return ConcreteMatrix(self._index, [[self._value_at(row, col) for col in
-        range(self.shape[1])] for row in range(self.shape[0])])
+        problems = [self._formula_at(i, j) for i, j in product(range(
+        self.shape[0]), range(self.shape[1]))]
+        results = WeightFunction.batch_model_count(*problems)
+        values = [[0.0 for _ in range(self.shape[1])] for _ in range(
+        self.shape[0])]
+        for (i, j), result in zip(product(range(self.shape[0]), range(
+        self.shape[1])), results):
+            values[i][j] = result
+        return ConcreteMatrix(self._index, values)
 
     def permutation(self, src_indices: Iterable[int], dst_indices: Iterable[int]
     | None = None) -> Self:
@@ -292,8 +299,10 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
                 cnf.add_clause([-var, *(-v for v in pos_vars)])
         return cnf
 
-    def _value_at(self, row: int, col: int) -> Field:
-        """ Evaluate the value at the given row and column of the matrix """
+    def _formula_at(self, row: int, col: int) -> tuple[CNF, WeightFunction]:
+        """ Get the CNF formula and weight function that, when evaluated, give a
+            model count equal to the entry in this matrix at the given row and
+            column """
         cnf = self._cnf.copy()
         q = self._index.q
         row_dim, col_dim = len(self._output_vars) // self._log_q, len(
@@ -312,7 +321,12 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
                 var = self._input_vars[var_index]
                 cnf.add_clause([var if elt & 1 else -var])
                 elt >>= 1
-        return self._weight_func(cnf)
+        return (cnf, self._weight_func)
+
+    def _value_at(self, row: int, col: int) -> Field:
+        """ Evaluate the value at the given row and column of the matrix """
+        cnf, weight_func = self._formula_at(row, col)
+        return weight_func(cnf)
     
     def _permute_vars(self, src_vars: list[BoolVar], extra_vars: list[BoolVar],
     src_indices: list[int]) -> list[BoolVar]:

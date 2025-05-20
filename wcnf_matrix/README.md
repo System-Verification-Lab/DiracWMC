@@ -5,25 +5,9 @@ A tool for matrix representation using logical formulae and weight functions.
 
 ## Requirements
 
-The package requires Python 3.12 or higher and has to be installed on Linux. Additionally, for DPMC to run the following need to be installed:
-
-- make
-- cmake 3.16
-- automake 1.16
-- g++ 11.2
-- gmp 6.2
-- boost (graph and system)
-    - `sudo apt-get install libboost-all-dev`
+The package requires Python 3.12 or higher and docker to be installed on the system.
 
 ## Installation
-
-Before the tool can be used, the DPMC solver needs to be installed. Then the tool is installed as a Python package.
-
-### DPMC installation
-
-Instructions for installing DPMC can be found in [docs/solvers/DPMC.md](docs/solvers/DPMC.md). Make sure DPMC is installed in the directory `solvers/DPMC`!
-
-### Installing the Python package
 
 The python package can be installed by navigating to the folder this README is contained in, and running
 ```sh

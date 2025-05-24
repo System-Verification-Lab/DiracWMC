@@ -97,75 +97,14 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         if len(elements) == 0:
             raise ValueError("Cannot determine linear combination of zero "
             "matrices")
-        true_elements = [(1, elt.copy()) if isinstance(elt, WCNFMatrix) else
-        (elt[0], elt[1].copy()) for elt in elements]
-        index = true_elements[0][1].index
-        if not all(elt[1].index == index for elt in true_elements):
-            raise ValueError(f"Cannot add matrices with different index")
-        if not all(elt[1].shape == true_elements[0][1].shape for elt in
-        true_elements):
-            raise ValueError(f"Cannot add matrices with different shapes: "
-            f"{tuple(elt[1].shape for elt in true_elements)}")
-        condition_vars = [BoolVar() for _ in true_elements]
-        input_vars = [BoolVar() for _ in true_elements[0][1]._input_vars]
-        output_vars = [BoolVar() for _ in true_elements[0][1]._output_vars]
-        condition_cnf = CNF()
-        for cv, elt in zip(condition_vars, true_elements):
-            for v1, v2 in zip(input_vars, elt[1]._input_vars):
-                condition_cnf.add_clause([-cv, v1, -v2], [-cv, -v1, v2])
-            for v1, v2 in zip(output_vars, elt[1]._output_vars):
-                condition_cnf.add_clause([-cv, v1, -v2], [-cv, -v1, v2])
-        one_cv = CNF()
-        one_cv.add_clause(condition_vars)
-        for cv1, cv2 in product(condition_vars, repeat=2):
-            if cv1 <= cv2:
-                continue
-            one_cv.add_clause([-cv1, -cv2])
-        cnf = reduce(lambda x, y: x & y, (elt[1]._cnf | CNF([[-cv]]) for elt, cv
-        in zip(true_elements, condition_vars))) & one_cv & condition_cnf
-        extra_weights = WeightFunction(condition_vars + input_vars +
-        output_vars)
-        extra_weights.fill(1.0)
-        for elt, cv in zip(true_elements, condition_vars):
-            extra_weights[cv, False] = 1 / elt[1]._weight_func.total_weight()
-            extra_weights[cv, True] = elt[0]
-        return WCNFMatrix(
-            index,
-            cnf,
-            extra_weights * reduce(lambda x, y: x * y, (elt[1]._weight_func for
-            elt in true_elements)),
-            input_vars,
-            output_vars
-        )
+        return reduce(lambda x, y: x._add(y), (elt if isinstance(elt,
+        WCNFMatrix) else elt[1]._scalar_mult(elt[0]) for elt in elements))
 
     @classmethod
     def product[Field](cls, *elements: WCNFMatrix[Field]) -> WCNFMatrix[Field]:
         if len(elements) == 0:
             raise ValueError("Cannot determine product of zero matrices")
-        q, index = elements[0].index.q, elements[0].index
-        if not all(elt.index == elements[0].index for elt in elements):
-            raise ValueError("Cannot calculate product of matrices with "
-            "different index")
-        log_q = elements[0]._log_q
-        elements = [elt.copy() for elt in reversed(elements)]
-        extra_cnf = CNF()
-        for elt_a, elt_b in zip(elements, elements[1:]):
-            if len(elt_a._output_vars) != len(elt_b._input_vars):
-                raise ValueError(f"Cannot multiply matrices with shapes "
-                f"{elt_b.shape} and {elt_a.shape}")
-            elt_b.bulk_subst({i: o for i, o in zip(elt_b._input_vars,
-            elt_a._output_vars)})
-            for i in range(0, len(elt_a._output_vars), log_q):
-                extra_cnf &= cls._less_than_cnf(elt_a._output_vars[i:i + log_q],
-                q)
-        return WCNFMatrix(
-            index,
-            extra_cnf & reduce(lambda x, y: x & y, (elt._cnf for elt in
-            elements)),
-            reduce(lambda x, y: x * y, (elt._weight_func for elt in elements)),
-            elements[0]._input_vars,
-            elements[-1]._output_vars
-        )
+        return reduce(lambda x, y: x._multiply(y), elements)
 
     @classmethod
     def kron[Field](cls, *elements: WCNFMatrix[Field]) -> WCNFMatrix[Field]:
@@ -343,3 +282,75 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
                 start_index = self._log_q * src_index
                 result_vars += src_vars[start_index:start_index + self._log_q]
         return result_vars
+
+    def _scalar_mult(self, factor: float) -> Self:
+        """ Returns the matrix that is the result of multiplying the current
+            matrix with a scalar factor """
+        mat = self.copy()
+        if len(mat._weight_func.domain) == 0 or factor == 1.0:
+            return mat
+        scale_var = next(iter(mat._weight_func.domain))
+        mat._weight_func[scale_var, False] *= factor
+        mat._weight_func[scale_var, True] *= factor
+        return mat
+
+    def _multiply(self, other: Self) -> Self:
+        """ Multiply current matrix with another and return the result """
+        left, right = self.copy(), other.copy()
+        q, index = left.index.q, left.index
+        if right.index != index:
+            raise ValueError("Cannot calculate product of matrices with "
+            "different index")
+        log_q = left._log_q
+        extra_cnf = CNF()
+        if len(left._input_vars) != len(right._output_vars):
+            raise ValueError(f"Cannot multiply matrices with shapes "
+            f"{left.shape} and {right.shape}")
+        left.bulk_subst({i: o for i, o in zip(left._input_vars,
+        right._output_vars)})
+        for i in range(0, len(right._output_vars), log_q):
+            extra_cnf &= self._less_than_cnf(right._output_vars[i:i + log_q], q)
+        return WCNFMatrix(
+            index,
+            extra_cnf & left._cnf & right._cnf,
+            left._weight_func * right._weight_func,
+            right._input_vars,
+            left._output_vars
+        )
+
+    def _add(self, other: Self) -> Self:
+        """ Add current matrix and another matrix, and return the result """
+        left, right = self.copy(), other.copy()
+        index = left.index
+        if right.index != index:
+            raise ValueError("Cannot calculate sum of matrices with different "
+            "index")
+        if left.shape != right.shape:
+            raise ValueError(f"Cannot calculate sum of matrices with different "
+            f"shapes {left.shape} and {right.shape}")
+        c = BoolVar()
+        input_vars = [BoolVar() for _ in left._input_vars]
+        output_vars = [BoolVar() for _ in left._output_vars]
+        io_weight_func = WeightFunction(input_vars + output_vars)
+        io_weight_func.fill(1.0)
+        c_weight_func = WeightFunction([c])
+        c_weight_func[c, True] = 1.0 / right._weight_func.total_weight()
+        c_weight_func[c, False] = 1.0 / left._weight_func.total_weight()
+        def link_vars(first: Iterable[BoolVar], second: Iterable[BoolVar]) -> (
+        CNF):
+            """ Returns the CNF formula x <-> y for all x, y in zip(first,
+                second) """
+            return CNF(sum(([[x, -y], [-x, y]] for x, y in zip(first, second)),
+            []))
+        left_cnf = (left._cnf & link_vars(input_vars, left._input_vars) &
+        link_vars(output_vars, left._output_vars))
+        right_cnf = (right._cnf & link_vars(input_vars, right._input_vars) &
+        link_vars(output_vars, right._output_vars))
+        return WCNFMatrix(
+            index,
+            (CNF([[-c]]) | left_cnf) & (CNF([[c]]) | right_cnf),
+            left._weight_func * right._weight_func * io_weight_func *
+            c_weight_func,
+            input_vars,
+            output_vars
+        )

@@ -289,7 +289,7 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         mat = self.copy()
         extra_var = BoolVar()
         mat._weight_func = mat._weight_func * WeightFunction([extra_var],
-        weights={extra_var: (0.0, factor)})
+        weights={extra_var: (factor, factor)})
         mat._cnf.add_clause([extra_var])
         return mat
 

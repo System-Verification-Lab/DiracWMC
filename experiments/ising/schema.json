@@ -1,0 +1,27 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["spin_count", "external_field", "interaction"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {"type": "string"},
+        "spin_count": {"type": "integer"},
+        "external_field": {
+            "type": "array",
+            "items": {"type": "number"}
+        },
+        "interaction": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": [
+                    {"type": "integer"},
+                    {"type": "integer"},
+                    {"type": "number"}
+                ],
+                "minItems": 3,
+                "maxItems": 3
+            }
+        }
+    }
+}

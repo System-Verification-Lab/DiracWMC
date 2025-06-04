@@ -287,11 +287,10 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         """ Returns the matrix that is the result of multiplying the current
             matrix with a scalar factor """
         mat = self.copy()
-        if len(mat._weight_func.domain) == 0 or factor == 1.0:
-            return mat
-        scale_var = next(iter(mat._weight_func.domain))
-        mat._weight_func[scale_var, False] *= factor
-        mat._weight_func[scale_var, True] *= factor
+        extra_var = BoolVar()
+        mat._weight_func = mat._weight_func * WeightFunction([extra_var],
+        weights={extra_var: (factor, factor)})
+        mat._cnf.add_clause([extra_var])
         return mat
 
     def _multiply(self, other: Self) -> Self:

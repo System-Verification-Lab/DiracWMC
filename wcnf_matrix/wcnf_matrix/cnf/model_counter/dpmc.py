@@ -1,6 +1,6 @@
 
 import docker
-from docker.errors import NotFound
+from docker.errors import NotFound, ContainerError
 from typing import Iterator
 from time import time
 from .model_counter import ModelCounter, ModelCounterResult
@@ -20,8 +20,11 @@ class DPMC(ModelCounter):
     ModelCounterResult):
         """ Determine the value of weight_func(cnf) using the DPMC solver """
         start = time()
-        output = self._client.containers.run("dpmc:latest", command=["python",
-        "run_solver.py", format_dpmc(cnf, weight_func)])
+        try:
+            output = self._client.containers.run("dpmc:latest", command=[
+            "python", "run_solver.py", format_dpmc(cnf, weight_func)])
+        except ContainerError:
+            return ModelCounterResult(False)
         end = time()
         result = output.decode("utf-8")
         for line in result.split("\n"):
@@ -32,9 +35,14 @@ class DPMC(ModelCounter):
 
     def batch_model_count(self, *problems: tuple[CNF, WeightFunction]) -> (
     Iterator[ModelCounterResult]):
-        output = self._client.containers.run("dpmc:latest", command=["python",
-        "run_solver.py", *(format_dpmc(cnf, weight_func) for cnf, weight_func in
-        problems)])
+        try:
+            output = self._client.containers.run("dpmc:latest", command=[
+            "python", "run_solver.py", *(format_dpmc(cnf, weight_func) for cnf,\
+            weight_func in problems)])
+        except ContainerError:
+            for _ in problems:
+                yield ModelCounterResult(False)
+            return
         result = output.decode("utf-8")
         if result == "ERR":
             for _ in problems:

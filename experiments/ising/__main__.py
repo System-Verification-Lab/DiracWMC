@@ -1,5 +1,5 @@
 
-from .converter import ising_to_wcnf
+from .converter import ising_to_wcnf, ising_to_wcnf_matrix
 from .ising_model import IsingModel
 from wcnf_matrix import ModelCounter, DPMC
 import random
@@ -30,14 +30,18 @@ def generate_square_lattice(size: int) -> IsingModel:
         model[i] = random.normalvariate(0, 1)
     return model
 
-def experiment_square_lattice():
+def experiment_square_lattice(use_matrix: bool = False):
     for solver in SOLVERS:
         model_counter = solver()
-        print(f"\nSquare lattice {solver.__name__}:")
+        print(f"\nSquare lattice {solver.__name__} (matrix={use_matrix}):")
         for size in range(2, 23):
             models = [generate_square_lattice(size) for _ in
             range(AVG_OVER_RUNS)]
-            problems = [ising_to_wcnf(model) for model in models]
+            if use_matrix:
+                problems = [ising_to_wcnf_matrix(model).trace_formula() for
+                model in models]
+            else:
+                problems = [ising_to_wcnf(model) for model in models]
             failed = False
             runtime = 0.0
             for result in model_counter.batch_model_count(*problems):
@@ -50,14 +54,19 @@ def experiment_square_lattice():
             print(f"({size}, {runtime / AVG_OVER_RUNS})", end=" ", flush=True)
         print()
 
-def experiment_square_lattice_accuracy():
+def experiment_square_lattice_accuracy(use_matrix: bool = False):
     for solver in SOLVERS:
         model_counter = solver()
-        print(f"\nSquare lattice accuracy {solver.__name__}:")
+        print(f"\nSquare lattice accuracy {solver.__name__} (matrix="
+        f"{use_matrix}):")
         for size in range(2, 5):
             models = [generate_square_lattice(size) for _ in
             range(AVG_OVER_RUNS)]
-            problems = [ising_to_wcnf(model) for model in models]
+            if use_matrix:
+                problems = [ising_to_wcnf_matrix(model).trace_formula() for
+                model in models]
+            else:
+                problems = [ising_to_wcnf(model) for model in models]
             failed = False
             error = 0.0
             for result, model in zip(model_counter.batch_model_count(*problems),
@@ -74,5 +83,7 @@ def experiment_square_lattice_accuracy():
 
 #############################################
 
+experiment_square_lattice(use_matrix=True)
+experiment_square_lattice_accuracy(use_matrix=True)
 experiment_square_lattice()
 experiment_square_lattice_accuracy()

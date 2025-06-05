@@ -188,6 +188,16 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         self._cnf.bulk_subst(var_map)
         self._weight_func.bulk_subst(var_map)
 
+    def trace_formula(self) -> tuple[CNF, WeightFunction]:
+        """ Get the CNF formula and weight function such that the model count of
+            the formula w.r.t. the weight function is equal to the trace of this
+            matrix """
+        matrix_copy = self.copy()
+        cnf = self._cnf.copy()
+        for iv, ov in zip(matrix_copy._input_vars, matrix_copy._output_vars):
+            cnf.add_clause([iv, -ov], [-iv, ov])
+        return matrix_copy._cnf, matrix_copy._weight_func
+
     @property
     def domain(self) -> set[BoolVar]:
         """ Get an iterable over the domain of variables of the weight function

@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from typing import Iterator
 from ..cnf import CNF
 from ..weights import WeightFunction
 
@@ -47,3 +48,11 @@ class ModelCounter(ABC):
     def is_available(self) -> bool:
         """ Check if the model counter is available to run """
         pass
+
+    def batch_model_count(self, *problems: tuple[CNF, WeightFunction]) -> (
+    Iterator[ModelCounterResult]):
+        """ Run the model counter on a batch of problems. Returns an iterator
+            over all results in order """
+        # NOTE: Default implementation calls model_count repeatedly
+        for cnf, weight_func in problems:
+            yield self.model_count(cnf, weight_func)

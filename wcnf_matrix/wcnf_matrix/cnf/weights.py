@@ -231,8 +231,8 @@ class WeightFunction:
     def model_count(self, cnf: CNF) -> float:
         """ The weighted model count of the given formula with respect to this
             weight function. Calculated using brute force """
-        from . import DPMC
-        result = DPMC().model_count(cnf, self)
+        from .model_counter import default_model_counter
+        result = default_model_counter().model_count(cnf, self)
         if not result.success:
             raise RuntimeError("DPMC solver failed to execute")
         return result.model_count
@@ -245,6 +245,27 @@ class WeightFunction:
         return reduce(lambda x, y: x * y, (self.get_weight(v, False) +
         self.get_weight(v, True) for v in self._domain))
 
+    def normalize(self) -> float:
+        """ Normalize all weight in this weight function to be probabilities,
+            i.e. weight[v, False] + weight[v, True] = 1. Returns the factor with
+            which the model count of the new weight function needs to be
+            multiplied to get the model count of the old weight function. All
+            weights need to be set and non-negative. """
+        for v in self._domain:
+            assert self[v, False] is not None and self[v, False] >= 0.0
+            assert self[v, True] is not None and self[v, True] >= 0.0
+        factor = 1.0
+        for v in self._domain:
+            cur = self[v, False] + self[v, True]
+            if cur == 0.0:
+                factor = 0.0
+                self[v, False] = self[v, True] = 0.5
+            else:
+                self[v, False] /= cur
+                self[v, True] /= cur
+                factor *= cur
+        return factor
+
     @property
     def domain(self) -> set[BoolVar]:
         """ The domain of the weight function as a tuple of variables """
@@ -255,8 +276,8 @@ class WeightFunction:
     Iterator[float]):
         """ Get the model count of a collection of problems. Returns an iterator
             over the results """
-        from . import DPMC
-        results = DPMC().batch_model_count(*problems)
+        from .model_counter import default_model_counter
+        results = default_model_counter().batch_model_count(*problems)
         for result in results:
             if not result.success:
                 raise RuntimeError("DPMC solver failed to execute")

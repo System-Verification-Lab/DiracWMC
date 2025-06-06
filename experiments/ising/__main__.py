@@ -152,9 +152,10 @@ def experiment_random_regular_graph(use_matrix: bool = False):
 
 #############################################
 
-# experiment_square_lattice()
-# experiment_square_lattice_accuracy()
-# experiment_square_lattice(use_matrix=True)
-# experiment_square_lattice_accuracy(use_matrix=True)
+experiment_square_lattice()
+experiment_square_lattice_accuracy()
+experiment_square_lattice(use_matrix=True)
+experiment_square_lattice_accuracy(use_matrix=True)
+
 experiment_random_regular_graph()
 experiment_random_regular_graph(use_matrix=True)

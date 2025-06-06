@@ -1,10 +1,10 @@
 
 from .converter import ising_to_wcnf, ising_to_wcnf_matrix
 from .ising_model import IsingModel
-from wcnf_matrix import ModelCounter, DPMC, Cachet
+from wcnf_matrix import ModelCounter, DPMC, Cachet, TensorOrder
 import random
 
-SOLVERS: tuple[type[ModelCounter], ...] = (DPMC, Cachet)
+SOLVERS: tuple[type[ModelCounter], ...] = (DPMC, Cachet, TensorOrder,)
 AVG_OVER_RUNS = 5
 random.seed(42)
 
@@ -50,6 +50,7 @@ def experiment_square_lattice(use_matrix: bool = False):
                     break
                 runtime += result.runtime
             if failed:
+                print("FAILURE")
                 break
             print(f"({size}, {runtime / AVG_OVER_RUNS})", end=" ", flush=True)
         print()
@@ -77,6 +78,7 @@ def experiment_square_lattice_accuracy(use_matrix: bool = False):
                 error += abs(result.model_count / model.partition_function() -
                 1)
             if failed:
+                print("FAILURE")
                 break
             print(f"({size}, {error / AVG_OVER_RUNS})", end=" ", flush=True)
         print()

@@ -111,13 +111,26 @@ def generate_random_regular_graph(size: int, degree: int) -> IsingModel:
         model[i] = random.normalvariate()
     return model
 
+def generate_random_graph(size: int, expected_degree: float) -> IsingModel:
+    """ Generate a random regular graph Ising model with interaction strengths
+        uniformly from [-1, 1] and no external field. Given are the size of
+        graph (number of nodes) and the expected degree of each node """
+    model = IsingModel(size)
+    for i in range(size):
+        for j in range(i):
+            # NOTE: This is technically incorrect (should be expected_degree /
+            # (size - 1)), but this is also done this way in Nagy et al.
+            if random.uniform(0, 1) < expected_degree / size:
+                model[i, j] = random.uniform(-1, 1)
+    return model
+
 def experiment_random_regular_graph(use_matrix: bool = False):
     random.seed(42)
     for solver in SOLVERS:
         model_counter = solver()
         print(f"\nRandom graph {solver.__name__} (matrix={use_matrix}):")
         for size in range(40, 150, 4):
-            models = [generate_random_regular_graph(size, 3) for _ in
+            models = [generate_random_graph(size, 3) for _ in
             range(AVG_OVER_RUNS)]
             if use_matrix:
                 problems = [ising_to_wcnf_matrix(model).trace_formula() for

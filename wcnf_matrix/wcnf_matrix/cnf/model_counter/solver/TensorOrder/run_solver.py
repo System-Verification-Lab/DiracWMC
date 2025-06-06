@@ -4,7 +4,7 @@ from tempfile import NamedTemporaryFile
 import sys
 
 TIMEOUT = 15
-SRC_FOLDER = "/usr/src/app/TensorOrder-2.0.0"
+SRC_FOLDER = "/usr/src/app/TensorOrder"
 
 # If no command line arguments are given, stdin is read
 if len(sys.argv) > 1:
@@ -19,14 +19,14 @@ def run_on_input(inp: str) -> "str | None":
     with open(temp_file.name, "w") as f:
         f.write(inp)
     infile = open(temp_file.name, "r")
-    p = Popen(["python", "./src/tensororder.py", "--method=factor-Flow",
-    f"--timeout={TIMEOUT}"], cwd=SRC_FOLDER, stdout=PIPE,
+    p = Popen(["python", "./src/tensororder.py", "--planner=factor-Flow",
+    "--weights=cachet", f"--timeout={TIMEOUT}"], cwd=SRC_FOLDER, stdout=PIPE,
     stdin=infile, stderr=PIPE)
     try:
-        output, stderr = p.communicate(timeout=TIMEOUT)
+        output, _ = p.communicate(timeout=TIMEOUT)
     except TimeoutExpired:
         return None
-    return output.decode("utf-8") + "\n" + stderr.decode("utf-8")
+    return output.decode("utf-8")
 
 output: "list[str]" = []
 for inp in inputs:

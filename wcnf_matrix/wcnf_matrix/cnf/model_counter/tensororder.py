@@ -67,6 +67,11 @@ class TensorOrder(ModelCounter):
                 runtimes.append(float(line.split()[-1]))
             if line.startswith("Count:"):
                 model_counts.append(float(line.split()[-1]) * factors[-1])
+                factors.pop()
+        if len(model_counts) != len(problems):
+            for _ in problems:
+                yield ModelCounterResult(False)
+            return
         for model_count, runtime in zip(model_counts, runtimes):
             yield ModelCounterResult(True, runtime, model_count)
 

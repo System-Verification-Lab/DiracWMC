@@ -9,11 +9,12 @@ RUN apt-get update
 RUN apt-get upgrade -y
 
 # Download TensorOrder source code
-ADD https://github.com/vardigroup/TensorOrder/archive/refs/tags/v2.0.0.zip ./TensorOrder.zip
+ADD https://github.com/vardigroup/TensorOrder/archive/6f59e6a2ffe37aa372e128d6c5ee089376a6d8c1.zip ./TensorOrder.zip
 RUN apt-get install unzip
 RUN unzip ./TensorOrder.zip
 RUN rm -f ./TensorOrder.zip
-WORKDIR /usr/src/app/TensorOrder-2.0.0
+RUN mv ./TensorOrder-6f59e6a2ffe37aa372e128d6c5ee089376a6d8c1 ./TensorOrder
+WORKDIR /usr/src/app/TensorOrder
 
 # Fix bugs in code
 ADD ./fix_files.py ./fix_files.py

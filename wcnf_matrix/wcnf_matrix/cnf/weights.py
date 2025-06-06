@@ -234,7 +234,7 @@ class WeightFunction:
         from .model_counter import default_model_counter
         result = default_model_counter().model_count(cnf, self)
         if not result.success:
-            raise RuntimeError("DPMC solver failed to execute")
+            raise RuntimeError("Solver failed to execute")
         return result.model_count
 
     def total_weight(self) -> float:
@@ -280,7 +280,7 @@ class WeightFunction:
         results = default_model_counter().batch_model_count(*problems)
         for result in results:
             if not result.success:
-                raise RuntimeError("DPMC solver failed to execute")
+                raise RuntimeError("Solver failed to execute")
             yield result.model_count
 
     def _var_mappings(self) -> Iterator[Mapping[BoolVar, bool]]:

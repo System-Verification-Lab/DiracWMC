@@ -10,27 +10,36 @@ def install_dpmc():
     "cnf", "model_counter", "solver", "DPMC")
     client = docker.from_env()
     try:
-        client.containers.get("dpmc:latest")
+        client.images.get("dpmc:latest")
         print("DPMC already installed!")
     except:
         client.images.build(path=docker_build_path, tag="dpmc")
 
 def install_cachet():
     """ Install the Cachet solver using Docker """
-    print("Installing cachet...")
+    print("Installing Cachet...")
     docker_build_path = os.path.join(os.path.dirname(__file__), "wcnf_matrix",
     "cnf", "model_counter", "solver", "cachet")
     client = docker.from_env()
     try:
-        client.containers.get("cachet:latest")
+        client.images.get("cachet:latest")
         print("Cachet already installed!")
     except:
-        try:
-            client.images.build(path=docker_build_path, tag="cachet")
-        except Exception as e:
-            print(e)
-            raise Exception()
+        client.images.build(path=docker_build_path, tag="cachet")
+
+def install_tensororder():
+    """ Install the TensorOrder solver using Docker """
+    print("Installing TensorOrder...")
+    docker_build_path = os.path.join(os.path.dirname(__file__), "wcnf_matrix",
+    "cnf", "model_counter", "solver", "TensorOrder")
+    client = docker.from_env()
+    try:
+        client.images.get("tensororder:latest")
+        print("TensorOrder already installed!")
+    except:
+        client.images.build(path=docker_build_path, tag="tensororder")
 
 install_dpmc()
 install_cachet()
+install_tensororder()
 setuptools.setup()

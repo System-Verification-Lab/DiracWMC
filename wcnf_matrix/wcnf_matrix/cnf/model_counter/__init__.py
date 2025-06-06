@@ -2,6 +2,7 @@
 from .model_counter import ModelCounter, ModelCounterResult
 from .dpmc import DPMC
 from .cachet import Cachet
+from .tensororder import TensorOrder
 
 default_model_counter = DPMC
 

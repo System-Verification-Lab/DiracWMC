@@ -1,6 +1,6 @@
 
 import docker
-from docker.errors import NotFound, ContainerError
+from docker.errors import ImageNotFound, ContainerError
 from typing import Iterator
 from time import time
 from .model_counter import ModelCounter, ModelCounterResult
@@ -61,7 +61,7 @@ class DPMC(ModelCounter):
     def is_available(self) -> bool:
         """ Returns if DPMC is available """
         try:
-            self._client.containers.get("dpmc:latest")
-        except NotFound:
+            self._client.images.get("dpmc:latest")
+        except ImageNotFound:
             return False
         return True

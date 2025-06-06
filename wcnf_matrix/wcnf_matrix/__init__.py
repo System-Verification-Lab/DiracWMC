@@ -4,4 +4,4 @@ from .reg import Reg
 from .matrix import (ConcreteMatrix, Matrix, bra, ket, value, LabelMatrix,
 WCNFMatrix)
 from .cnf import (CNF, WeightFunction, BoolVar, SignedBoolVar, ModelCounter,
-ModelCounterResult, set_model_counter, DPMC, Cachet)
+ModelCounterResult, set_model_counter, DPMC, Cachet, TensorOrder)

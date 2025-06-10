@@ -1,0 +1,65 @@
+
+from __future__ import annotations
+from typing import Iterable
+from .varrep import VarRep
+from ...cnf import CNF, BoolVar
+
+class OrderVarRep(VarRep):
+    """ Integer representation using a binary encoding, resulting in a
+        logarithmic number of variables to represent a number """
+    
+    def __init__(self, q: int, vars: Iterable[BoolVar] | None = None):
+        """ Constructor of a variable representation in the range 0,...,q-1. If
+            vars is given, it has to have the length of num_vars """
+        super().__init__(q, vars)
+        if vars is None:
+            self.vars = [BoolVar() for _ in range(q - 1)]
+        else:
+            self.vars = list(vars)
+            if len(self.vars) != q - 1:
+                raise RuntimeError(f"Number of variables passed to "
+                f"{self.__class__.__name__} constructor must be {q - 1} for q "
+                f"= {q}, instead got {len(self.vars)}")
+
+    def __str__(self) -> str:
+        """ String representation """
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        """ Canonical representation """
+        return f"{self.__class__.__name__}({self.q!r}, {self.vars!r})"
+
+    def equals(self, number: int) -> CNF:
+        cnf = CNF()
+        for i, var in enumerate(self.vars):
+            if i < number:
+                cnf.add_clause([var])
+            else:
+                cnf.add_clause([-var])
+        return cnf
+    
+    def less_than_q(self) -> CNF:
+        cnf = CNF()
+        for var, next_var in zip(self.vars, self.vars[1:]):
+            cnf.add_clause([-next_var, var])
+        return cnf
+
+    def equals_other(self, other: OrderVarRep) -> CNF:
+        cnf = CNF()
+        for var, other_var in zip(self.vars, other.vars):
+            cnf.add_clause([var, -other_var], [-var, other_var])
+        return cnf
+    
+    def substitute(self, mapping: dict[BoolVar, BoolVar]):
+        m = lambda x: mapping.get(x, x)
+        self.vars = list(map(m, self.vars))
+
+    def copy(self):
+        return OrderVarRep(self.q, self.vars.copy())
+    
+    def domain(self) -> Iterable[BoolVar]:
+        return self.vars
+    
+    @classmethod
+    def num_vars(self, q: int) -> int:
+        return q - 1

@@ -14,7 +14,8 @@ class VarRep:
     @abstractmethod
     def equals(self, number: int) -> CNF:
         """ Returns a CNF formula that checks if the var representation is equal
-            to the given number. Number should be in the range 0,...,q-1 """
+            to the given number. Number should be in the range 0,...,q-1. This
+            formula also checks if the representation is valid """
         pass
 
     @abstractmethod

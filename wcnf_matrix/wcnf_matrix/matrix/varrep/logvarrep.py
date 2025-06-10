@@ -63,6 +63,23 @@ class LogVarRep(VarRep):
             cnf.add_clause([var, -other_var], [-var, other_var])
         return cnf
     
+    def equals_other_to_var(self, other: LogVarRep, target_var: BoolVar) -> (
+    tuple[CNF, list[BoolVar]]):
+        assert self.q == other.q
+        cnf = CNF()
+        aux_vars = [BoolVar() for _ in range(self.vars)]
+        # Introduce formulae a <-> (x <-> y)
+        for var, other_var, aux_var in zip(self.vars, other.vars, aux_vars):
+            cnf.add_clause(
+                [-aux_var, var, -other_var],
+                [-aux_var, -var, other_var],
+                [aux_var, var, other_var],
+                [aux_var, -var, -other_var],
+            )
+        cnf.add_clause([target_var, *(-av for av in aux_vars)])
+        cnf.add_clause(*([-target_var, av] for av in aux_vars))
+        return cnf, aux_vars
+
     def substitute(self, mapping: dict[BoolVar, BoolVar]):
         m = lambda x: mapping.get(x, x)
         self.vars = list(map(m, self.vars))

@@ -33,6 +33,16 @@ class VarRep:
         pass
 
     @abstractmethod
+    def equals_other_to_var(self, other: Self, target_var: BoolVar) -> tuple[
+    CNF, list[BoolVar]]:
+        """ Similar to equals_other, but returns the formula var <=> (self <=>
+            other) instead of self <=> other. This formula does not check if
+            either value is valid. This function may introduce auxiliary
+            variables, which are returned as a list in the second argument of
+            the return value """
+        pass
+
+    @abstractmethod
     def substitute(self, mapping: dict[BoolVar, BoolVar]):
         """ Substitute variables in this variable representation """
         pass

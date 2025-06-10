@@ -110,6 +110,14 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         return WCNFMatrix(index, cnf, weight_func, [], var_reps)
 
     @classmethod
+    def identity[Field](cls, index: Index[Field], size: int) -> WCNFMatrix[
+    Field]:
+        io_vars = [var_rep_type(index.q) for _ in range(size)]
+        weight_func = WeightFunction(chain(*(v.domain() for v in io_vars)))
+        weight_func.fill(1.0)
+        return WCNFMatrix(index, CNF(), weight_func, io_vars, io_vars)
+
+    @classmethod
     def linear_comb[Field](cls, *elements: tuple[Field, WCNFMatrix[Field]] |
     WCNFMatrix[Field]) -> WCNFMatrix[Field]:
         if len(elements) == 0:

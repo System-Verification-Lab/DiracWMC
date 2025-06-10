@@ -79,6 +79,14 @@ class ConcreteMatrix[Field](AbstractMatrix[Field]):
         in range(q ** len(elements))])
     
     @classmethod
+    def identity[Field](cls, index: Index[Field], size: int) -> ConcreteMatrix[
+    Field]:
+        zero, one = index.field(0), index.field(1)
+        q = index.q
+        return ConcreteMatrix(index, [[one if i == j else zero for j in
+        range(q ** size)] for i in range(q ** size)])
+
+    @classmethod
     def linear_comb[Field](cls, *elements: tuple[Field, ConcreteMatrix[Field]] |
     ConcreteMatrix[Field]) -> ConcreteMatrix[Field]:
         if len(elements) == 0:

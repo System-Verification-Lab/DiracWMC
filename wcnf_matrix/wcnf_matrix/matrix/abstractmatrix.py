@@ -73,6 +73,13 @@ class AbstractMatrix[Field](ABC):
 
     @classmethod
     @abstractmethod
+    def identity(cls, index: Index[Field], size: int) -> Self:
+        """ Get the identity matrix in the given Hilbert space index, with the
+            given size (q^size * q^size) """
+        pass
+
+    @classmethod
+    @abstractmethod
     def linear_comb(cls, *elements: tuple[Field, Self] | Self) -> Self:
         """ Returns a linear combination of matrices, where each element can be
             a tuple (factor, matrix) or just a matrix, which is equivalent to

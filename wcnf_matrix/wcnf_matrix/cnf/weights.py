@@ -16,12 +16,13 @@ class WeightFunction:
     tuple[float | None, float | None]] | None = None):
         """ Constructor, given the domain of variables, and optionally a map of
             variables to tuples of weights (negative, positive) """
+        domain = list(domain)
         self._weights = {} if weights is None else dict(weights)
         for var in domain:
             self._weights.setdefault(var, (None, None))
         self._domain = set(domain)
         if any(var not in self._domain for var in self._weights):
-            raise ValueError(f"Variable {var} not in domain")
+            raise ValueError(f"Variable {var} not in domain {self._domain}")
 
     def __str__(self) -> str:
         """ String representation of the weight function """

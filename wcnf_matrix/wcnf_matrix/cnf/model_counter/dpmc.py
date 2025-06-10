@@ -39,12 +39,13 @@ class DPMC(ModelCounter):
             output = self._client.containers.run("dpmc:latest", command=[
             "python", "run_solver.py", *(format_dpmc(cnf, weight_func) for cnf,\
             weight_func in problems)])
-        except ContainerError:
+        except ContainerError as e:
+            print(e)
             for _ in problems:
                 yield ModelCounterResult(False)
             return
         result = output.decode("utf-8")
-        if result == "ERR":
+        if result.startswith("ERR"):
             for _ in problems:
                 yield ModelCounterResult(False)
             return

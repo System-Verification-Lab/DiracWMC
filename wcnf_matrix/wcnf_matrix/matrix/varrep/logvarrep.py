@@ -16,10 +16,26 @@ class LogVarRep(VarRep):
     """ Integer representation using a binary encoding, resulting in a
         logarithmic number of variables to represent a number """
     
-    def __init__(self, q: int):
-        """ Constructor of a variable representation in the range 0,...,q-1 """
-        super().__init__(q)
-        self.vars = [BoolVar() for _ in range(int_log(q))]
+    def __init__(self, q: int, vars: Iterable[BoolVar] | None = None):
+        """ Constructor of a variable representation in the range 0,...,q-1. If
+            vars is given, it has to have the length of num_vars """
+        super().__init__(q, vars)
+        if vars is None:
+            self.vars = [BoolVar() for _ in range(int_log(q))]
+        else:
+            self.vars = list(vars)
+            if len(self.vars) != int_log(q):
+                raise RuntimeError(f"Number of variables passed to "
+                f"{self.__class__.__name__} constructor must be {int_log(q)} "
+                f"for q = {q}, instead got {len(self.vars)}")
+
+    def __str__(self) -> str:
+        """ String representation """
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        """ Canonical representation """
+        return f"{self.__class__.__name__}({self.q!r}, {self.vars!r})"
 
     def equals(self, number: int) -> CNF:
         cnf = CNF()
@@ -48,7 +64,8 @@ class LogVarRep(VarRep):
         return cnf
     
     def substitute(self, mapping: dict[BoolVar, BoolVar]):
-        self.vars = list(map(mapping, self.vars))
+        m = lambda x: mapping.get(x, x)
+        self.vars = list(map(m, self.vars))
 
     def copy(self):
         other = LogVarRep(self.q)
@@ -57,3 +74,7 @@ class LogVarRep(VarRep):
     
     def domain(self) -> Iterable[BoolVar]:
         return self.vars
+    
+    @classmethod
+    def num_vars(self, q: int) -> int:
+        return int_log(q)

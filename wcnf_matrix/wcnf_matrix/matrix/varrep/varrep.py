@@ -6,8 +6,9 @@ from typing import Self, Iterable
 class VarRep:
     """ Base class of integer representations using Boolean variables """
 
-    def __init__(self, q: int):
-        """ Constructor of a variable representation in the range 0,...,q-1 """
+    def __init__(self, q: int, vars: Iterable[BoolVar] | None = None):
+        """ Constructor of a variable representation in the range 0,...,q-1. If
+            vars is given, it has to have the length of num_vars """
         self.q = q
 
     @abstractmethod
@@ -43,5 +44,14 @@ class VarRep:
 
     @abstractmethod
     def domain(self) -> Iterable[BoolVar]:
-        """ Get all variables used in the representation """
+        """ Get all variables used in the representation. Variables are ordered
+            the same way, such that two variable representations can be compared
+            """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def num_vars(self, q: int) -> int:
+        """ Returns the number of variables used for a representation of a
+            number in the range 0,...,q-1 """
         pass

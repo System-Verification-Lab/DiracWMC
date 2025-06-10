@@ -67,7 +67,7 @@ class LogVarRep(VarRep):
     tuple[CNF, list[BoolVar]]):
         assert self.q == other.q
         cnf = CNF()
-        aux_vars = [BoolVar() for _ in range(self.vars)]
+        aux_vars = [BoolVar() for _ in self.vars]
         # Introduce formulae a <-> (x <-> y)
         for var, other_var, aux_var in zip(self.vars, other.vars, aux_vars):
             cnf.add_clause(

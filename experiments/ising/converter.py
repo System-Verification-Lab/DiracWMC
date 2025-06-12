@@ -1,6 +1,6 @@
 
 from .ising_model import IsingModel
-from wcnf_matrix import CNF, WeightFunction, BoolVar, WCNFMatrix, Reg, Index
+from wcnf_matrix import CNF, WeightFunction, BoolVar, WCNFMatrix, Reg, Index, LogVarRep
 import numpy as np
 from functools import reduce
 
@@ -36,12 +36,13 @@ WeightFunction]:
     return cnf, weight_func
 
 def exp_z_rotation(theta: float, index: Index) -> WCNFMatrix[float]:
-    """ Returns a Z-rotation matrix with angle theta"""
+    """ Returns a Z-rotation matrix with angle theta """
     x = BoolVar()
     weight_func = WeightFunction([x], weights={
         x: (np.exp(theta), np.exp(-theta))
     })
-    return WCNFMatrix(index, CNF(), weight_func, [x], [x])
+    return WCNFMatrix(index, CNF(), weight_func, [LogVarRep(2, [x])],
+    [LogVarRep(2, [x])])
 
 def exp_zz_rotation(theta: float, index: Index) -> WCNFMatrix[float]:
     """ Returns a ZZ-rotation matrix with angle theta """
@@ -56,6 +57,7 @@ def exp_zz_rotation(theta: float, index: Index) -> WCNFMatrix[float]:
     weight_func.fill(1.0)
     weight_func[r, 0] = np.exp(-theta)
     weight_func[r, 1] = np.exp(theta)
+    x, y = LogVarRep(2, [x]), LogVarRep(2, [y])
     return WCNFMatrix(index, cnf, weight_func, [x, y], [x, y])
 
 def ising_to_wcnf_matrix(model: IsingModel, beta: float = 1.0) -> WCNFMatrix:

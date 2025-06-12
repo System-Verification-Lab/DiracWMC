@@ -34,7 +34,7 @@ def experiment_square_lattice(use_matrix: bool = False):
     for solver in SOLVERS:
         model_counter = solver()
         print(f"\nSquare lattice {solver.__name__} (matrix={use_matrix}):")
-        for size in range(2, 10):
+        for size in range(2, 25):
             models = [generate_square_lattice(size) for _ in
             range(AVG_OVER_RUNS)]
             if use_matrix:

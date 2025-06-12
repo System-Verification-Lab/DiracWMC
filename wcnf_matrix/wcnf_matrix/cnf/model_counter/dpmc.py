@@ -1,12 +1,16 @@
 
 import docker
-from docker.errors import ImageNotFound, ContainerError
+from docker.errors import ImageNotFound
 from typing import Iterator
-from time import time
 from .model_counter import ModelCounter, ModelCounterResult
 from ..cnf import CNF
 from ..weights import WeightFunction
 from .formats import format_dpmc
+from subprocess import Popen, PIPE
+import json
+
+PROCESS_TIMEOUT = 30
+RUNNER_VERSION = "1.7"
 
 class DPMC(ModelCounter):
     """ Interface to the DPMC model counter, which requires a docker image
@@ -19,45 +23,33 @@ class DPMC(ModelCounter):
     def model_count(self, cnf: CNF, weight_func: WeightFunction) -> (
     ModelCounterResult):
         """ Determine the value of weight_func(cnf) using the DPMC solver """
-        start = time()
-        try:
-            output = self._client.containers.run("dpmc:latest", command=[
-            "python", "run_solver.py", format_dpmc(cnf, weight_func)])
-        except ContainerError:
-            return ModelCounterResult(False)
-        end = time()
-        result = output.decode("utf-8")
-        for line in result.split("\n"):
-            if line.startswith("c s exact double prec-sci"):
-                weight = float(line.split()[-1])
-                return ModelCounterResult(True, end - start, weight)
-        return ModelCounterResult(False)
+        res = self.batch_model_count((cnf, weight_func))
+        return next(res)
 
     def batch_model_count(self, *problems: tuple[CNF, WeightFunction]) -> (
     Iterator[ModelCounterResult]):
         try:
-            output = self._client.containers.run("dpmc:latest", command=[
-            "python", "run_solver.py", *(format_dpmc(cnf, weight_func) for cnf,\
-            weight_func in problems)])
-        except ContainerError as e:
-            print(e)
+            problem_strings = [format_dpmc(cnf, wf) for cnf, wf in problems]
+            problems_json = json.dumps({"problems": problem_strings})
+            process = Popen(["docker", "run", "-i", "--rm",
+            f"dpmc:{RUNNER_VERSION}", "python", "run_solver.py"], stdin=PIPE,
+            stdout=PIPE)
+            output, _ = process.communicate(input=problems_json.encode(),
+            timeout=PROCESS_TIMEOUT)
+        except:
             for _ in problems:
                 yield ModelCounterResult(False)
-            return
-        result = output.decode("utf-8")
-        if result.startswith("ERR"):
-            for _ in problems:
-                yield ModelCounterResult(False)
-            return
-        model_counts: list[float] = []
-        runtimes: list[float] = []
-        for line in result.split("\n"):
-            if line.startswith("c s exact double prec-sci"):
-                model_counts.append(float(line.split()[-1]))
-            if line.startswith("c seconds"):
-                runtimes.append(float(line.split()[-1]))
-        for model_count, runtime in zip(model_counts, runtimes):
-            yield ModelCounterResult(True, runtime, model_count)
+        results = json.loads(output.decode())
+        for result in results["results"]:
+            model_count = None
+            runtime = -1.0
+            for line in result.split("\n"):
+                if line.startswith("c s exact double prec-sci"):
+                    model_count = float(line.split()[-1])
+                if line.startswith("c seconds"):
+                    runtime = float(line.split()[-1])
+            yield ModelCounterResult(model_count is not None, runtime,
+            model_count)
 
     def is_available(self) -> bool:
         """ Returns if DPMC is available """

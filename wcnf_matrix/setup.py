@@ -3,7 +3,7 @@ import docker
 import os
 import setuptools
 
-RUNNER_VERSION = "1.5"
+RUNNER_VERSION = "1.7"
 
 def install_dpmc():
     """ Install the DPMC solver using Docker """
@@ -11,9 +11,9 @@ def install_dpmc():
     docker_build_path = os.path.join(os.path.dirname(__file__), "wcnf_matrix",
     "cnf", "model_counter", "solver", "DPMC")
     client = docker.from_env()
-    tag = f"dpmc{RUNNER_VERSION}"
+    tag = f"dpmc:{RUNNER_VERSION}"
     try:
-        client.images.get(f"{tag}:latest")
+        client.images.get(tag)
         print("DPMC already installed!")
     except:
         client.images.build(path=docker_build_path, tag=tag)
@@ -45,6 +45,6 @@ def install_tensororder():
         client.images.build(path=docker_build_path, tag=tag)
 
 install_dpmc()
-install_cachet()
-install_tensororder()
+# install_cachet()
+# install_tensororder()
 setuptools.setup()

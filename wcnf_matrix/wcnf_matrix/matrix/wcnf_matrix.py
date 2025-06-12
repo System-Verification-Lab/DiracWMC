@@ -180,7 +180,7 @@ class WCNFMatrix[Field](AbstractMatrix[Field]):
         extra_vars, src_indices)
         matrix._output_vars = matrix._permute_vars(matrix._output_vars,
         extra_vars, dst_indices)
-        extra_weights = WeightFunction(extra_vars)
+        extra_weights = WeightFunction(list(chain(*(var.domain() for var in extra_vars))))
         extra_weights.fill(1.0)
         matrix._weight_func *= extra_weights
         return matrix

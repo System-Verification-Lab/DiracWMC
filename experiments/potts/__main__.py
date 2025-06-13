@@ -1,7 +1,7 @@
 
 from .converter import standard_potts_to_wcnf_matrix
 from .standard_potts_model import StandardPottsModel
-from wcnf_matrix import ModelCounter, DPMC, Cachet, TensorOrder, set_var_rep_type, OrderVarRep
+from wcnf_matrix import ModelCounter, DPMC, Cachet, TensorOrder, set_var_rep_type, OrderVarRep, OneHotVarRep
 import random
 
 SOLVERS: tuple[type[ModelCounter], ...] = (DPMC,)

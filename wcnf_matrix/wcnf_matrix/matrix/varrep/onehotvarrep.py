@@ -3,22 +3,23 @@ from __future__ import annotations
 from typing import Iterable
 from .varrep import VarRep
 from ...cnf import CNF, BoolVar
+from itertools import product
 
-class OrderVarRep(VarRep):
-    """ Integer representation using an order encoding, resulting in a linear
-        number of variables to represent a number """
+class OneHotVarRep(VarRep):
+    """ Integer representation using a one-hot, resulting in a linear number of
+        variables to represent a number """
     
     def __init__(self, q: int, vars: Iterable[BoolVar] | None = None):
         """ Constructor of a variable representation in the range 0,...,q-1. If
             vars is given, it has to have the length of num_vars """
         super().__init__(q, vars)
         if vars is None:
-            self.vars = [BoolVar() for _ in range(q - 1)]
+            self.vars = [BoolVar() for _ in range(q)]
         else:
             self.vars = list(vars)
-            if len(self.vars) != q - 1:
+            if len(self.vars) != q:
                 raise RuntimeError(f"Number of variables passed to "
-                f"{self.__class__.__name__} constructor must be {q - 1} for q "
+                f"{self.__class__.__name__} constructor must be {q} for q "
                 f"= {q}, instead got {len(self.vars)}")
 
     def __str__(self) -> str:
@@ -32,7 +33,7 @@ class OrderVarRep(VarRep):
     def equals(self, number: int) -> CNF:
         cnf = CNF()
         for i, var in enumerate(self.vars):
-            if i < number:
+            if i == number:
                 cnf.add_clause([var])
             else:
                 cnf.add_clause([-var])
@@ -40,18 +41,20 @@ class OrderVarRep(VarRep):
     
     def less_than_q(self) -> CNF:
         cnf = CNF()
-        for var, next_var in zip(self.vars, self.vars[1:]):
-            cnf.add_clause([-next_var, var])
+        cnf.add_clause(self.vars)
+        for i, j in product(self.vars, self.vars):
+            if i != j:
+                cnf.add_clause([-i, -j])
         return cnf
 
-    def equals_other(self, other: OrderVarRep) -> CNF:
+    def equals_other(self, other: OneHotVarRep) -> CNF:
         assert self.q == other.q
         cnf = CNF()
         for var, other_var in zip(self.vars, other.vars):
             cnf.add_clause([var, -other_var], [-var, other_var])
         return cnf
     
-    def equals_other_to_var(self, other: OrderVarRep, target_var: BoolVar) -> (
+    def equals_other_to_var(self, other: OneHotVarRep, target_var: BoolVar) -> (
     tuple[CNF, list[BoolVar]]):
         assert self.q == other.q
         cnf = CNF()
@@ -73,11 +76,11 @@ class OrderVarRep(VarRep):
         self.vars = list(map(m, self.vars))
 
     def copy(self):
-        return OrderVarRep(self.q, self.vars.copy())
+        return OneHotVarRep(self.q, self.vars.copy())
     
     def domain(self) -> Iterable[BoolVar]:
         return self.vars
     
     @classmethod
     def num_vars(self, q: int) -> int:
-        return q - 1
+        return q

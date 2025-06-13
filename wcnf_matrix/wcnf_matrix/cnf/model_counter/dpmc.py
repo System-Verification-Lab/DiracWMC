@@ -8,9 +8,9 @@ from ..weights import WeightFunction
 from .formats import format_dpmc
 from subprocess import Popen, PIPE
 import json
+from .config import RUNNER_VERSION
 
 PROCESS_TIMEOUT = 30
-RUNNER_VERSION = "1.7"
 
 class DPMC(ModelCounter):
     """ Interface to the DPMC model counter, which requires a docker image

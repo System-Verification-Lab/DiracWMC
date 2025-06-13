@@ -1,11 +1,16 @@
 
 import docker
-from docker.errors import NotFound, ContainerError
+from docker.errors import NotFound
 from typing import Iterator
 from .model_counter import ModelCounter, ModelCounterResult
 from ..cnf import CNF
 from ..weights import WeightFunction
 from .formats import format_cachet
+import json
+from .config import RUNNER_VERSION
+from subprocess import Popen, PIPE
+
+PROCESS_TIMEOUT = 30
 
 class TensorOrder(ModelCounter):
     """ Interface to the TensorOrder model counter, which requires a docker
@@ -19,61 +24,34 @@ class TensorOrder(ModelCounter):
     ModelCounterResult):
         """ Determine the value of weight_func(cnf) using the TensorOrder solver
             """
-        weight_func = weight_func.copy()
-        factor = weight_func.normalize()
-        try:
-            output = self._client.containers.run("tensororder:latest", command=[
-            "python", "run_solver.py", format_cachet(cnf, weight_func)])
-        except ContainerError:
-            return ModelCounterResult(False)
-        result = output.decode("utf-8")
-        time_taken = count = None
-        for line in result.split("\n"):
-            if line.startswith("Total Time:"):
-                time_taken = float(line.split()[-1])
-            if line.startswith("Count:"):
-                count = float(line.split()[-1])
-        if count is None:
-            return ModelCounterResult(False)
-        if time_taken is None:
-            time_taken = -1.0
-        return ModelCounterResult(True, time_taken, count * factor)
+        res = self.batch_model_count((cnf, weight_func))
+        return next(res)
 
     def batch_model_count(self, *problems: tuple[CNF, WeightFunction]) -> (
     Iterator[ModelCounterResult]):
-        formats: list[str] = []
-        factors: list[float] = []
-        for cnf, weight_func in problems:
-            weight_func = weight_func.copy()
-            factors.append(weight_func.normalize())
-            formats.append(format_cachet(cnf, weight_func))
-        factors = list(reversed(factors))
+        problems, factors = self._normalize_problems(*problems)
         try:
-            output = self._client.containers.run("tensororder:latest", command=[
-            "python", "run_solver.py", *formats])
-        except ContainerError:
+            problem_strings = [format_cachet(cnf, wf) for cnf, wf in problems]
+            problems_json = json.dumps({"problems": problem_strings})
+            process = Popen(["docker", "run", "-i", "--rm",
+            f"tensororder:{RUNNER_VERSION}", "python", "run_solver.py"],
+            stdin=PIPE, stdout=PIPE)
+            output, _ = process.communicate(input=problems_json.encode(),
+            timeout=PROCESS_TIMEOUT)
+        except:
             for _ in problems:
                 yield ModelCounterResult(False)
-            return
-        result = output.decode("utf-8")
-        if result == "ERR":
-            for _ in problems:
-                yield ModelCounterResult(False)
-            return
-        model_counts: list[float] = []
-        runtimes: list[float] = []
-        for line in result.split("\n"):
-            if line.startswith("Total Time:"):
-                runtimes.append(float(line.split()[-1]))
-            if line.startswith("Count:"):
-                model_counts.append(float(line.split()[-1]) * factors[-1])
-                factors.pop()
-        if len(model_counts) != len(problems):
-            for _ in problems:
-                yield ModelCounterResult(False)
-            return
-        for model_count, runtime in zip(model_counts, runtimes):
-            yield ModelCounterResult(True, runtime, model_count)
+        results = json.loads(output.decode())
+        for result, factor in zip(results["results"], factors):
+            model_count = None
+            runtime = -1.0
+            for line in result.split("\n"):
+                if line.startswith("Count:"):
+                    model_count = float(line.split()[-1]) * factor
+                if line.startswith("Total Time:"):
+                    runtime = float(line.split()[-1])
+            yield ModelCounterResult(model_count is not None, runtime,
+            model_count)
 
     def is_available(self) -> bool:
         """ Returns if Cachet is available """
@@ -82,3 +60,17 @@ class TensorOrder(ModelCounter):
         except NotFound:
             return False
         return True
+    
+    def _normalize_problems(self, *problems: tuple[CNF, WeightFunction]) -> (
+    tuple[list[tuple[CNF, WeightFunction]], list[float]]):
+        """ Normalize the weight functions of the given problems, and return a
+            list of the new problems and a list of factors, with which the model
+            counts of the new problems need to be multiplied to get the model
+            counts of the original problems """
+        new_problems = []
+        factors = []
+        for cnf, wf in problems:
+            wf = wf.copy()
+            factors.append(wf.normalize())
+            new_problems.append((cnf, wf))
+        return new_problems, factors

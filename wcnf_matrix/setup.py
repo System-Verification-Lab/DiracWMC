@@ -3,7 +3,7 @@ import docker
 import os
 import setuptools
 
-RUNNER_VERSION = "1.7"
+RUNNER_VERSION = "1.8"
 
 def install_dpmc():
     """ Install the DPMC solver using Docker """
@@ -24,9 +24,9 @@ def install_cachet():
     docker_build_path = os.path.join(os.path.dirname(__file__), "wcnf_matrix",
     "cnf", "model_counter", "solver", "cachet")
     client = docker.from_env()
-    tag = f"cachet{RUNNER_VERSION}"
+    tag = f"cachet:{RUNNER_VERSION}"
     try:
-        client.images.get(f"{tag}:latest")
+        client.images.get(f"{tag}")
         print("Cachet already installed!")
     except:
         client.images.build(path=docker_build_path, tag=tag)
@@ -37,14 +37,14 @@ def install_tensororder():
     docker_build_path = os.path.join(os.path.dirname(__file__), "wcnf_matrix",
     "cnf", "model_counter", "solver", "TensorOrder")
     client = docker.from_env()
-    tag = f"tensororder{RUNNER_VERSION}"
+    tag = f"tensororder:{RUNNER_VERSION}"
     try:
-        client.images.get(f"{tag}:latest")
+        client.images.get(f"{tag}")
         print("TensorOrder already installed!")
     except:
         client.images.build(path=docker_build_path, tag=tag)
 
 install_dpmc()
-# install_cachet()
-# install_tensororder()
+install_cachet()
+install_tensororder()
 setuptools.setup()

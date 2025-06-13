@@ -2,15 +2,12 @@
 from subprocess import PIPE, Popen, TimeoutExpired
 from tempfile import NamedTemporaryFile
 import sys
+import json
 
 TIMEOUT = 15
 SRC_FOLDER = "/usr/src/app/TensorOrder"
 
-# If no command line arguments are given, stdin is read
-if len(sys.argv) > 1:
-    inputs = sys.argv[1:]
-else:
-    inputs = [sys.stdin.read()]
+inputs: "list[str]" = json.loads(sys.stdin.read())["problems"]
 
 def run_on_input(inp: str) -> "str | None":
     """ Run the solver on the given input and return result string, or None if
@@ -28,12 +25,11 @@ def run_on_input(inp: str) -> "str | None":
         return None
     return output.decode("utf-8")
 
-output: "list[str]" = []
+results = {"results": [], "inputs": inputs}
 for inp in inputs:
     result = run_on_input(inp)
     if result is None:
-        print("ERR")
-        exit(1)
-    output.append(result)
-for out in output:
-    print(out)
+        results["results"].append("ERR")
+    else:
+        results["results"].append(result)
+print(json.dumps(results))

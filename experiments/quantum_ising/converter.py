@@ -67,10 +67,14 @@ trotter_layers: int = 5) -> tuple[CNF, WeightFunction]:
     index = Index()
     n = len(model)
     regs = [Reg(index) for _ in range(n)]
+    ident = reduce(lambda x, y: x * y, (identity(index) | reg for reg in regs))
     # Z-direction
-    interactions = reduce(lambda x, y: x * y, (exp_zz_rotation(beta *
-    strength / trotter_layers, index) | (regs[i], regs[j]) for i, j, strength in
-    model.interactions()))
+    if len(list(model.interactions())) == 0:
+        interactions = ident
+    else:
+        interactions = reduce(lambda x, y: x * y, (exp_zz_rotation(beta *
+        strength / trotter_layers, index) | (regs[i], regs[j]) for i, j, strength in
+        model.interactions()))
     external_field_z = reduce(lambda x, y: x * y, (exp_z_rotation(beta *
     model.external_field_z / trotter_layers, index) | reg for reg in regs))
     # Hadamards
@@ -81,7 +85,7 @@ trotter_layers: int = 5) -> tuple[CNF, WeightFunction]:
     model.external_field_x / trotter_layers, index) | regs[i] for i in
     range(n)))
     # Calculate final matrix
-    cur = reduce(lambda x, y: x * y, (identity(index) | reg for reg in regs))
+    cur = ident
     for _ in range(trotter_layers):
         cur *= (interactions * external_field_z * hadamards * external_field_x *
         hadamards)

@@ -4,6 +4,7 @@ from .quantum_ising_model import QuantumIsingModel
 from wcnf_matrix import ModelCounter, DPMC, Cachet, TensorOrder
 import random
 from typing import Iterable
+import time
 
 # NOTE: Cachet and TensorOrder cannot handle negative weights
 SOLVERS: tuple[type[ModelCounter], ...] = (DPMC,)
@@ -31,15 +32,19 @@ QuantumIsingModel):
     model.external_field_z = random.normalvariate()
     return model
 
-def experiment_random_regular_graph(size: int, layers: Iterable[int]):
+def experiment_random_regular_graph(size: int, layers: Iterable[int], *,
+expected_degree: float = 3.0, cutoff: float = 1e-2):
     random.seed(42)
     for solver in SOLVERS:
         model_counter = solver()
-        print(f"\nRandom graph {solver.__name__} (size={size}); reporting "
-        "(error, runtime):")
-        models = [generate_random_graph(size, 3) for _ in
+        print(f"\nRandom graph {solver.__name__} (size={size}, "
+        f"deg={expected_degree}); reporting (error, runtime):")
+        models = [generate_random_graph(size, expected_degree) for _ in
         range(AVG_OVER_RUNS)]
+        tstart_raw = time.time()
         true_values = [model.partition_function(BETA) for model in models]
+        tend_raw = time.time()
+        print(f"Direct calculation time: {(tend_raw - tstart_raw) / AVG_OVER_RUNS}")
         for trotter_layers in layers:
             problems = [quantum_ising_to_wcnf(model, BETA, trotter_layers) for
             model in models]
@@ -56,10 +61,19 @@ def experiment_random_regular_graph(size: int, layers: Iterable[int]):
             if failed:
                 print("FAILURE")
                 break
-            print(f"({error / AVG_OVER_RUNS}, {runtime / AVG_OVER_RUNS})",
+            avg_error = error / AVG_OVER_RUNS
+            if avg_error < cutoff:
+                break
+            print(f"({avg_error}, {runtime / AVG_OVER_RUNS})",
             end=" ", flush=True)
         print()
 
 #############################################
 
-experiment_random_regular_graph(6, range(5, 200, 5))
+# Dense
+for n in range(2, 13, 2):
+    experiment_random_regular_graph(n, range(1, 50, 1), expected_degree=3.0, cutoff=1e-2)
+
+# Sparse
+for n in range(2, 13, 2):
+    experiment_random_regular_graph(n, range(1, 50, 1), expected_degree=1.0, cutoff=1e-2)

@@ -5,7 +5,7 @@ A tool for matrix representation using logical formulae and weight functions.
 
 ## Requirements
 
-The package requires Python 3.12 or higher and docker to be installed on the system.
+The package requires Python 3.12 or higher and docker to be installed on the system. It has been tested in WSL, but should work across operating systems.
 
 ## Installation
 
@@ -14,6 +14,9 @@ The python package can be installed by navigating to the folder this README is c
 python -m pip install .
 ```
 Optionally you may want to install the package in a virtual environment.
+
+> [!IMPORTANT]
+> The installation will take a long time to finish, and may seem to freeze. This is due to the DPMC, Cachet, and TensorOrder model counters being installed alongside the package. The package still functions correctly when only installing DPMC. If you would like to only install DPMC, remove the lines `install_cachet() and `install_tensororder()` from [setup.py](./setup.py)
 
 ## Usage
 

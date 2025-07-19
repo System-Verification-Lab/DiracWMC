@@ -10,3 +10,4 @@ python -m experiments.ising # Classical Ising model
 python -m experiments.potts # Classical Potts model
 python -m experiments.quantum_ising # Transverse-field Ising model
 ```
+Note that the experiments may need all three solvers DPMC, Cachet, and TensorOrder to be installed.
